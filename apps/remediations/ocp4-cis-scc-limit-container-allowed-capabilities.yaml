@@ -1,0 +1,39 @@
+# Control: ocp4-cis-scc-limit-container-allowed-capabilities
+# NIST SP 800-53 Rev. 5
+# Primary controls:
+# - AC-6 - Least Privilege
+# - CM-6 - Configuration Settings
+# - CM-7 - Least Functionality
+# Link: https://csrc.nist.gov/projects/risk-management/sp800-53-controls#AC-6
+# Publication: https://csrc.nist.gov/pubs/sp/800/53/r5/upd1/final
+# Intent: Limit container Linux capabilities to the minimum required.
+# Note: Prefer binding workloads to a tighter SCC rather than editing built-in SCCs.
+
+apiVersion: security.openshift.io/v1
+kind: SecurityContextConstraints
+metadata:
+  name: custom-restricted-capabilities
+allowPrivilegedContainer: false
+allowedCapabilities: []
+defaultAddCapabilities: []
+requiredDropCapabilities:
+- KILL
+- MKNOD
+- SETUID
+- SETGID
+readOnlyRootFilesystem: false
+runAsUser:
+  type: MustRunAsRange
+seLinuxContext:
+  type: MustRunAs
+fsGroup:
+  type: MustRunAs
+supplementalGroups:
+  type: RunAsAny
+volumes:
+- configMap
+- downwardAPI
+- emptyDir
+- persistentVolumeClaim
+- projected
+- secret

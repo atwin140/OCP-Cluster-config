@@ -1,0 +1,16 @@
+# Control: ocp4-cis-ingress-controller-tls-cipher-suites
+# NIST SP 800-53 Rev. 5
+# Primary controls:
+# - SC-13 - Cryptographic Protection
+# - SC-8 - Transmission Confidentiality and Integrity
+# Link: https://csrc.nist.gov/projects/risk-management/sp800-53-controls#SC-13
+# Publication: https://csrc.nist.gov/pubs/sp/800/53/r5/upd1/final
+# Intent: Enforce strong TLS protocol and cipher suite settings on the ingress controller.
+apiVersion: operator.openshift.io/v1
+kind: IngressController
+metadata:
+  name: default
+  namespace: openshift-ingress-operator
+spec:
+  tlsSecurityProfile:
+    type: Intermediate

@@ -1,0 +1,43 @@
+# Root / bootstrap Application (app-of-apps pattern).
+# Apply this ONCE manually (or via a cluster bootstrap job) to seed Argo CD.
+# After the first sync, Argo CD manages the AppProject and all child Applications
+# automatically; no further manual oc apply commands are needed.
+#
+# Destination is the hub cluster's openshift-gitops namespace because this
+# Application creates Argo CD Application CRs (not workload resources).
+#
+# NOTE: this Application itself is NOT managed by another Application to avoid
+# a self-reference bootstrap chicken-and-egg problem.  Keep it out of the
+# apps/kustomization.yaml resources list.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: compliance-scanning-root
+  namespace: openshift-gitops
+  labels:
+    app.kubernetes.io/part-of: compliance-scanning
+    tier: app-of-apps
+spec:
+  project: default
+
+  source:
+    # Replace with your actual repository URL.
+    repoURL: "https://github.com/REPLACE_ME/OCP-Cluster-config.git"
+    targetRevision: HEAD
+    # Points at the apps/ directory; Argo CD discovers kustomization.yaml there.
+    path: apps
+
+  destination:
+    # Hub cluster – where Argo CD itself runs.
+    server: https://kubernetes.default.svc
+    namespace: openshift-gitops
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+    - CreateNamespace=false
+    - ServerSideApply=true
+
+  revisionHistoryLimit: 10

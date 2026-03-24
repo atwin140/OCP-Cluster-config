@@ -1,0 +1,30 @@
+# ScanSettingBinding – ties the two STIG profiles to the shared ScanSetting.
+# Creating this resource triggers the Compliance Operator to immediately launch
+# a ComplianceSuite (and underlying ComplianceScans) the first time it is
+# reconciled, then on the schedule defined in the ScanSetting.
+#
+# ocp4-stig   → CIS/STIG rules for the OCP4 API / control-plane objects.
+# rhcos4-stig → STIG rules applied directly on each RHCOS node (master+worker).
+apiVersion: compliance.openshift.io/v1alpha1
+kind: ScanSettingBinding
+metadata:
+  name: stig-binding
+  namespace: openshift-compliance
+  labels:
+    app.kubernetes.io/part-of: compliance-scanning
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    # Wave 2: wait for ScanSetting (wave 1) to be healthy before binding.
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  profiles:
+  - apiGroup: compliance.openshift.io/v1alpha1
+    kind: Profile
+    name: ocp4-stig
+  - apiGroup: compliance.openshift.io/v1alpha1
+    kind: Profile
+    name: rhcos4-stig
+  settingsRef:
+    apiGroup: compliance.openshift.io/v1alpha1
+    kind: ScanSetting
+    name: stig-scan-setting

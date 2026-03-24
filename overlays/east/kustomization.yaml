@@ -1,0 +1,24 @@
+# East cluster overlay Kustomize manifest.
+# Inherits all base resources from base/compliance-scanning and applies the
+# east-specific ScanSetting patch (schedule + storage class).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: openshift-compliance
+
+# Identify resources as belonging to the east cluster for observability.
+commonAnnotations:
+  cluster.name: east
+  cluster.region: us-east-1
+
+resources:
+- ../../base/compliance-scanning
+
+patches:
+# Strategic-merge patch: only overrides fields listed in the patch file.
+- path: patch-scan-setting.yaml
+  target:
+    group: compliance.openshift.io
+    version: v1alpha1
+    kind: ScanSetting
+    name: stig-scan-setting
