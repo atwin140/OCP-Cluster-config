@@ -201,3 +201,4 @@ oc annotate compliancescan ocp4-stig -n openshift-compliance \
 | Pin to a specific operator version | Add a `targetRevision` git tag to the Application |
 | Suspend scanning temporarily | Patch `spec.suspend: true` in `scan-setting.yaml` via overlay |
 
+# OCP-Cluster-config
