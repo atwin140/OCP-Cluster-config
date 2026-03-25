@@ -1,0 +1,31 @@
+apiVersion: redhatcop.redhat.io/v1alpha1
+kind: GroupSync
+metadata:
+  name: keycloak-admin-group-sync
+  namespace: group-sync-operator
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  schedule: "*/15 * * * *"
+  providers:
+    - name: keycloak
+      keycloak:
+        url: https://keycloak.example.com
+        # For modern Keycloak, do not append /auth.
+        # For older Keycloak / RH-SSO (<17), append /auth.
+        realm: myrealm
+        loginRealm: master
+        scope: sub
+        prune: false
+        credentialsSecret:
+          name: keycloak-group-sync
+          namespace: group-sync-operator
+        # Sync only the admin group you want bound to cluster-admin.
+        # Use the exact Keycloak group name or path as exposed by the provider.
+        groups:
+          - cluster-admins
+        ca:
+          kind: ConfigMap
+          name: keycloak-certs
+          namespace: group-sync-operator
+          key: ca.crt
