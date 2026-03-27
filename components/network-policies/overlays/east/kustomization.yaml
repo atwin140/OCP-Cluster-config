@@ -1,0 +1,13 @@
+# East cluster network-policies overlay.
+# Inherits all base policies. Add east-specific allow rules here.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: openshift-network-policies
+
+commonAnnotations:
+  cluster.name: east
+  cluster.region: us-east-1
+
+resources:
+- ../../base

@@ -1,0 +1,34 @@
+# UserWorkloadMonitoringConfig – enables and configures application-level metrics
+# collection for workloads outside of the default openshift-monitoring stack.
+# Allows development teams to define PrometheusRules and ServiceMonitors without
+# cluster-admin access.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: user-workload-monitoring-config
+  namespace: openshift-user-workload-monitoring
+  labels:
+    app.kubernetes.io/part-of: observability
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+data:
+  config.yaml: |
+    prometheus:
+      retention: 24h
+      resources:
+        requests:
+          cpu: 200m
+          memory: 512Mi
+      volumeClaimTemplate:
+        spec:
+          storageClassName: gp3-csi
+          resources:
+            requests:
+              storage: 40Gi
+    alertmanager:
+      enabled: true
+      resources:
+        requests:
+          cpu: 20m
+          memory: 48Mi

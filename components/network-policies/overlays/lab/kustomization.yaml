@@ -1,0 +1,12 @@
+# Lab cluster network-policies overlay.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: openshift-network-policies
+
+commonAnnotations:
+  cluster.name: lab
+  cluster.region: us-east-1
+
+resources:
+- ../../base

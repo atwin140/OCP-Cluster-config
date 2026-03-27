@@ -1,0 +1,37 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: compliance-operator
+  namespace: openshift-gitops
+  labels:
+    app.kubernetes.io/part-of: cluster-onboarding
+    component: compliance-operator
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  project: platform-services
+  source:
+    repoURL: "https://github.com/REPLACE_ME/OCP-Cluster-config.git"
+    targetRevision: HEAD
+    path: components/compliance-operator/overlays/east
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: openshift-compliance
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+    - CreateNamespace=false
+    - ServerSideApply=true
+    - RespectIgnoreDifferences=true
+  ignoreDifferences:
+  - group: compliance.openshift.io
+    kind: ScanSetting
+    jsonPointers:
+    - /status
+  - group: operators.coreos.com
+    kind: Subscription
+    jsonPointers:
+    - /status
+  revisionHistoryLimit: 10

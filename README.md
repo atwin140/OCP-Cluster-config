@@ -1,204 +1,117 @@
-# OCP Cluster Config — Compliance Operator STIG Scanning
+# OCP Cluster Config - Group-Based OpenShift GitOps
 
-GitOps repository managing OpenShift Compliance Operator STIG scanning via
-**OpenShift GitOps (Argo CD)** using the **app-of-apps** pattern and **Kustomize**.
+This repository uses a grouped App-of-Apps pattern for OpenShift GitOps.
 
----
+- A bootstrap ApplicationSet discovers cluster folders under `clusters/`
+- Each cluster composes reusable app bundles from `groups/`
+- Shared services live in `components/`
+- Each cluster patches destination server one time, automatically for all Application objects
 
-## Repository Tree
+## Key Directories
 
+```text
+bootstrap/
+  kustomization.yaml
+  cluster-onboarding-project.yaml
+  platform-services-project.yaml
+  app-of-apps.yaml
+
+groups/
+  all/
+  east/
+  west/
+  prod/
+  non-prod/
+
+clusters/
+  cluster001/apps/
+  cluster002/apps/
+  cluster003/apps/
+  cluster004/apps/
+
+components/
+  compliance-operator/
+  remediation/
+  observability/
+  network-policies/
+  placeholders/
 ```
-.
-├── apps/
-│   ├── kustomization.yaml              # Kustomize root for all Argo CD objects
-│   ├── app-of-apps.yaml               # Bootstrap Application (apply once manually)
-│   ├── compliance-app-project.yaml    # Argo CD AppProject (wave 0)
-│   ├── east-compliance-scanning.yaml  # Argo CD Application → east cluster (wave 1)
-│   └── west-compliance-scanning.yaml  # Argo CD Application → west cluster (wave 1)
-│
-├── base/
-│   └── compliance-scanning/
-│       ├── kustomization.yaml         # Base Kustomize manifest
-│       ├── scan-setting.yaml          # ScanSetting (wave 1 inside overlay sync)
-│       └── scan-setting-binding.yaml  # ScanSettingBinding (wave 2)
-│
-└── overlays/
-    ├── east/
-    │   ├── kustomization.yaml         # East overlay – patches + cluster annotations
-    │   └── patch-scan-setting.yaml    # Schedule 01:00 UTC, storageClass gp3-csi
-    └── west/
-        ├── kustomization.yaml         # West overlay – patches + cluster annotations
-        └── patch-scan-setting.yaml    # Schedule 07:00 UTC, storageClass standard-csi
-```
 
----
+## Cluster-to-Group Mapping
+
+- cluster001 = all + east + non-prod
+- cluster002 = all + east + prod
+- cluster003 = all + west + non-prod
+- cluster004 = all + west + prod
 
 ## Prerequisites
 
-| Requirement | Details |
-|---|---|
-| OpenShift Container Platform | 4.12 or later |
-| Compliance Operator | Installed and healthy in `openshift-compliance` |
-| OpenShift GitOps | Argo CD running in `openshift-gitops` |
-| Clusters registered | East and west clusters added to Argo CD |
-| Profiles available | `ocp4-stig` and `rhcos4-stig` shipped by the operator |
+- OpenShift GitOps installed on the hub cluster (`openshift-gitops` namespace)
+- Spoke clusters registered in Argo CD
+- Cluster-admin or equivalent privileges for bootstrap
+- Repo URL and cluster API endpoints available
 
----
+## 1. Configure Repo Values
 
-## Quick Start
+1. Replace all `REPLACE_ME` repo URLs with your real Git URL.
+2. Update each cluster API endpoint in:
+   - `clusters/cluster001/apps/patch-destination-server.yaml`
+   - `clusters/cluster002/apps/patch-destination-server.yaml`
+   - `clusters/cluster003/apps/patch-destination-server.yaml`
+   - `clusters/cluster004/apps/patch-destination-server.yaml`
+3. Confirm storage classes used in overlays exist on target clusters.
 
-### 1. Replace placeholder values
+## 2. Bootstrap Deployment
 
-Search for `REPLACE_ME` across the `apps/` directory and substitute:
-
-| Placeholder | Replace with |
-|---|---|
-| `https://github.com/REPLACE_ME/OCP-Cluster-config.git` | Your actual Git remote URL |
-| `https://east-cluster-api.example.com:6443` | East cluster API endpoint (from `oc cluster-info`) |
-| `https://west-cluster-api.example.com:6443` | West cluster API endpoint |
-
-Storage class names in the overlay patches (`gp3-csi`, `standard-csi`) should
-also match what is available on each cluster:
+Run on the hub cluster:
 
 ```bash
-oc get storageclass          # run on each cluster
+oc apply -k bootstrap/
 ```
 
-### 2. Bootstrap Argo CD (run once on hub cluster)
+What this does:
+
+1. Creates AppProjects used by onboarding and platform services
+2. Creates the ApplicationSet (`cluster-onboarding`)
+3. ApplicationSet discovers `clusters/*`
+4. Generates `*-cluster-config` Applications for each cluster folder
+5. Each cluster config renders its group composition and creates child service Applications
+
+## 3. Verify Deployment
 
 ```bash
-oc apply -f apps/app-of-apps.yaml
-```
-
-Argo CD will sync `apps/` → create the `AppProject` → create both cluster
-`Application` objects → sync each overlay to its target cluster.
-
-### 3. Verify
-
-See the **Post-Deployment Verification** section below.
-
----
-
-## Scan Configuration
-
-| Setting | Value | Rationale |
-|---|---|---|
-| `autoApplyRemediations` | `false` | All fixes go through Git review |
-| `autoUpdateRemediations` | `false` | Prevents silent remediation updates |
-| `strictNodeScan` | `true` | Fails loudly if node enumeration is incomplete |
-| `roles` | `master`, `worker` | Covers all node types |
-| `schedule` (east) | `0 1 * * *` | 01:00 UTC – off-peak for US East |
-| `schedule` (west) | `0 7 * * *` | 07:00 UTC – midnight Pacific |
-| `rawResultStorage.rotation` | `3` | Retain last 3 result sets |
-| `rawResultStorage.size` | `1Gi` | Per-node PVC |
-| `scanTolerations` | master `NoSchedule` | Ensures scan pods reach control-plane |
-
-### Profiles
-
-| Profile | Scope |
-|---|---|
-| `ocp4-stig` | OCP4 API / control-plane STIG checks |
-| `rhcos4-stig` | RHCOS4 node-level STIG checks (master + worker) |
-
----
-
-## Sync Wave Order
-
-```
-app-of-apps sync (hub cluster)
-  wave 0  →  AppProject (compliance-app-project.yaml)
-  wave 1  →  east-compliance-scanning Application
-  wave 1  →  west-compliance-scanning Application
-
-Per-cluster sync (inside each Application)
-  wave 1  →  ScanSetting
-  wave 2  →  ScanSettingBinding   ← triggers ComplianceSuite creation
-```
-
----
-
-## Post-Deployment Verification
-
-Run all commands in the target cluster's context unless noted.
-
-```bash
-# 1. Confirm Argo CD Applications are Synced/Healthy
+# Hub: onboarding and child app CRs
 oc get applications -n openshift-gitops
+oc get applicationsets -n openshift-gitops
 
-# 2. Confirm ScanSetting was created
-oc get scansetting stig-scan-setting -n openshift-compliance -o yaml
-
-# 3. Confirm ScanSettingBinding was created
-oc get scansettingbinding stig-binding -n openshift-compliance -o yaml
-
-# 4. Watch the ComplianceSuite appear (operator creates it from the binding)
-oc get compliancesuite -n openshift-compliance -w
-
-# 5. Watch individual ComplianceScan progress
+# Spoke: compliance resources
+oc get subscription -n openshift-compliance
+oc get scansetting -n openshift-compliance
+oc get scansettingbinding -n openshift-compliance
+oc get compliancesuite -n openshift-compliance
 oc get compliancescans -n openshift-compliance
-
-# 6. Check scan pod status on each node
-oc get pods -n openshift-compliance -l workload=scanner
-
-# 7. View ComplianceCheckResult summary once scans complete
-oc get compliancecheckresults -n openshift-compliance \
-  --sort-by='.status.severity' | head -40
-
-# 8. Count results by status
-oc get compliancecheckresults -n openshift-compliance \
-  -o jsonpath='{range .items[*]}{.status.result}{"\n"}{end}' | sort | uniq -c
-
-# 9. List generated remediations (none applied yet)
-oc get complianceremediations -n openshift-compliance
-
-# 10. Verify raw result PVCs were created
-oc get pvc -n openshift-compliance
 ```
 
----
+## 4. Add a New App (No Per-Cluster Patch Changes)
 
-## Controlled Remediation Workflow (GitOps-safe)
+1. Add the new app manifest to the appropriate group folder (`groups/all`, `groups/east`, etc.)
+2. Commit and push
 
-Remediations are **never applied automatically**. The recommended workflow:
+No cluster patch updates are required because each cluster kustomization targets all `Application` objects and patches only `/spec/destination/server`.
 
-### Step 1 – Review available remediations
+## 5. Add a New Cluster
+
+1. Create `clusters/<name>/apps/kustomization.yaml`
+2. Select desired group bundles in `resources`
+3. Add `patch-destination-server.yaml` with that cluster API endpoint
+4. Commit and push
+
+The ApplicationSet will auto-discover the new cluster folder and create `<name>-cluster-config`.
+
+## 6. Example Git Commands
+
 ```bash
-oc get complianceremediations -n openshift-compliance \
-  -o custom-columns=NAME:.metadata.name,APPLY:.spec.apply,SEVERITY:.metadata.annotations."compliance\.openshift\.io/rule"
+git add .
+git commit -m "refactor: move to group-based app composition and automated cluster destination patching"
+git push origin <branch>
 ```
-
-### Step 2 – Export a remediation to Git
-```bash
-REMEDIATION=<remediation-name>
-oc get complianceremediation $REMEDIATION -n openshift-compliance -o yaml \
-  | grep -v 'creationTimestamp\|resourceVersion\|uid\|generation\|managedFields' \
-  > base/compliance-scanning/remediations/${REMEDIATION}.yaml
-```
-
-### Step 3 – Add to kustomization, open a PR, get peer review, merge.
-
-### Step 4 – Apply via patch (or let Argo CD apply the exported manifest)
-```bash
-oc patch complianceremediation $REMEDIATION -n openshift-compliance \
-  --type=merge -p '{"spec":{"apply":true}}'
-```
-
-### Step 5 – Trigger a re-scan to confirm compliance
-```bash
-oc annotate compliancescan ocp4-stig -n openshift-compliance \
-  compliance.openshift.io/rescan=
-```
-
----
-
-## Extending This Structure
-
-| Task | How |
-|---|---|
-| Add a third cluster | Copy `overlays/east/` → `overlays/<name>/`, add an Application in `apps/` |
-| Add another profile (e.g. `ocp4-cis`) | Add a `profiles` entry in `base/compliance-scanning/scan-setting-binding.yaml` |
-| Change scan schedule | Edit the relevant `overlays/<cluster>/patch-scan-setting.yaml` |
-| Pin to a specific operator version | Add a `targetRevision` git tag to the Application |
-| Suspend scanning temporarily | Patch `spec.suspend: true` in `scan-setting.yaml` via overlay |
-
-# OCP-Cluster-config

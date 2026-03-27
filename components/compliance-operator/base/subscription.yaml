@@ -1,0 +1,19 @@
+# Subscription – installs the Compliance Operator from OperatorHub.
+# installPlanApproval: Automatic  → OLM auto-upgrades within the channel.
+# Change to Manual for environments that require explicit approval before upgrades.
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: compliance-operator
+  namespace: openshift-compliance
+  labels:
+    app.kubernetes.io/part-of: compliance-operator
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  channel: stable
+  name: compliance-operator
+  source: redhat-operators
+  sourceNamespace: openshift-marketplace
+  installPlanApproval: Automatic

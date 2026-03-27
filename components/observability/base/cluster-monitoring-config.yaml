@@ -1,0 +1,36 @@
+# ClusterMonitoringConfig – base configuration for the built-in OCP monitoring stack.
+# Enables persistent storage for Prometheus and Alertmanager.
+# storageClassName is overridden per cluster via overlay patch.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cluster-monitoring-config
+  namespace: openshift-monitoring
+  labels:
+    app.kubernetes.io/part-of: observability
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+data:
+  config.yaml: |
+    prometheusK8s:
+      retention: 15d
+      volumeClaimTemplate:
+        spec:
+          storageClassName: gp3-csi
+          resources:
+            requests:
+              storage: 100Gi
+    alertmanagerMain:
+      volumeClaimTemplate:
+        spec:
+          storageClassName: gp3-csi
+          resources:
+            requests:
+              storage: 10Gi
+    prometheusOperator: {}
+    k8sPrometheusAdapter: {}
+    kubeStateMetrics: {}
+    telemeterClient: {}
+    openshiftStateMetrics: {}
+    thanosQuerier: {}

@@ -1,0 +1,19 @@
+# Lab cluster observability overlay.
+# Shorter retention and smaller PVCs; uses standard storage class for non-cloud lab.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+commonAnnotations:
+  cluster.name: lab
+  cluster.region: us-east-1
+
+resources:
+- ../../base
+
+patches:
+- path: patch-cluster-monitoring.yaml
+  target:
+    version: v1
+    kind: ConfigMap
+    name: cluster-monitoring-config
+    namespace: openshift-monitoring

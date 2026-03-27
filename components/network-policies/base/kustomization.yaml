@@ -1,0 +1,14 @@
+# Kustomize manifest for components/network-policies/base/.
+# Provides a deny-by-default baseline and common allow rules for platform namespaces.
+# Extend per cluster or per namespace via overlay patches and additional resources.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: openshift-network-policies
+
+resources:
+- default-deny.yaml
+
+commonLabels:
+  app.kubernetes.io/part-of: network-policies
+  app.kubernetes.io/managed-by: argocd

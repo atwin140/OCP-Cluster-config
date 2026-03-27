@@ -1,0 +1,21 @@
+# Lab cluster compliance-operator overlay.
+# More frequent scan schedule and smaller standard storage for non-cloud lab.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: openshift-compliance
+
+commonAnnotations:
+  cluster.name: lab
+  cluster.region: us-east-1
+
+resources:
+- ../../base
+
+patches:
+- path: patch-scan-setting.yaml
+  target:
+    group: compliance.openshift.io
+    version: v1alpha1
+    kind: ScanSetting
+    name: stig-scan-setting

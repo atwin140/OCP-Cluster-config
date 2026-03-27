@@ -1,0 +1,28 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: remediation
+  namespace: openshift-gitops
+  labels:
+    app.kubernetes.io/part-of: cluster-onboarding
+    component: remediation
+    group.region: east
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  project: platform-services
+  source:
+    repoURL: "https://github.com/REPLACE_ME/OCP-Cluster-config.git"
+    targetRevision: HEAD
+    path: components/remediation/overlays/east
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: openshift-compliance
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+    - CreateNamespace=false
+    - ServerSideApply=true
+  revisionHistoryLimit: 10

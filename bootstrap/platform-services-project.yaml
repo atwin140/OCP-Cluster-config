@@ -1,0 +1,37 @@
+# AppProject – shared project for all child platform service Applications
+# created by grouped cluster-config manifests.
+#
+# This project is cluster-agnostic and allows deployment to any registered cluster.
+# Tighten destinations as your inventory stabilizes.
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: platform-services
+  namespace: openshift-gitops
+  labels:
+    app.kubernetes.io/part-of: cluster-onboarding
+    tier: services
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  description: "Shared project for grouped platform service Applications"
+
+  sourceRepos:
+  - "https://github.com/REPLACE_ME/OCP-Cluster-config.git"
+
+  destinations:
+  - namespace: "*"
+    server: "*"
+
+  clusterResourceWhitelist:
+  - group: "*"
+    kind: "*"
+
+  namespaceResourceWhitelist:
+  - group: "*"
+    kind: "*"
+
+  orphanedResources:
+    warn: true
+
+  roles: []

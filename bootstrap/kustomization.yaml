@@ -1,0 +1,17 @@
+# Kustomize manifest for bootstrap/.
+# Apply ONCE to the hub cluster to seed Argo CD:
+#
+#   oc apply -k bootstrap/
+#
+# Sync-wave ordering:
+#   wave 0 → cluster-onboarding-project.yaml  (AppProject)
+#   wave 1 → app-of-apps.yaml                 (ApplicationSet, discovers clusters/*)
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: openshift-gitops
+
+resources:
+- cluster-onboarding-project.yaml
+- platform-services-project.yaml
+- app-of-apps.yaml

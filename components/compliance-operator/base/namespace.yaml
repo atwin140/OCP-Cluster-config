@@ -1,0 +1,14 @@
+# Namespace – openshift-compliance is created by the Compliance Operator OLM install.
+# This manifest is kept here for declarative documentation only; in practice
+# the operator's OperatorGroup creates it.  Set CreateNamespace=false in the
+# Application syncOptions to avoid conflicts.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: openshift-compliance
+  labels:
+    openshift.io/cluster-monitoring: "true"
+    app.kubernetes.io/part-of: compliance-operator
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"

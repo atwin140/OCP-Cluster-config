@@ -1,0 +1,28 @@
+# ScanSettingBinding – binds OCP4-STIG and RHCOS4-STIG profiles to the shared
+# ScanSetting, triggering the Compliance Operator to launch a ComplianceSuite.
+#
+# ocp4-stig   → STIG rules for the OCP4 API / control-plane objects.
+# rhcos4-stig → STIG rules applied on each RHCOS node (master + worker).
+apiVersion: compliance.openshift.io/v1alpha1
+kind: ScanSettingBinding
+metadata:
+  name: stig-binding
+  namespace: openshift-compliance
+  labels:
+    app.kubernetes.io/part-of: compliance-operator
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    # Wave 4: wait for ScanSetting (wave 3) to be healthy before binding.
+    argocd.argoproj.io/sync-wave: "4"
+spec:
+  profiles:
+  - apiGroup: compliance.openshift.io/v1alpha1
+    kind: Profile
+    name: ocp4-stig
+  - apiGroup: compliance.openshift.io/v1alpha1
+    kind: Profile
+    name: rhcos4-stig
+  settingsRef:
+    apiGroup: compliance.openshift.io/v1alpha1
+    kind: ScanSetting
+    name: stig-scan-setting

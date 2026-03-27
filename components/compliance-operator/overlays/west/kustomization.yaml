@@ -1,0 +1,21 @@
+# West cluster compliance-operator overlay.
+# Overrides: scan schedule (02:00 UTC / 19:00 PT), AWS gp3-csi storage class.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: openshift-compliance
+
+commonAnnotations:
+  cluster.name: west
+  cluster.region: us-west-2
+
+resources:
+- ../../base
+
+patches:
+- path: patch-scan-setting.yaml
+  target:
+    group: compliance.openshift.io
+    version: v1alpha1
+    kind: ScanSetting
+    name: stig-scan-setting

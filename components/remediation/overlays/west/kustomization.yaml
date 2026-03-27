@@ -1,0 +1,10 @@
+# West cluster remediation overlay.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+commonAnnotations:
+  cluster.name: west
+  cluster.region: us-west-2
+
+resources:
+- ../../base

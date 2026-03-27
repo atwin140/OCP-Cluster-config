@@ -1,0 +1,28 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: network-policies
+  namespace: openshift-gitops
+  labels:
+    app.kubernetes.io/part-of: cluster-onboarding
+    component: network-policies
+    group.region: west
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  project: platform-services
+  source:
+    repoURL: "https://github.com/REPLACE_ME/OCP-Cluster-config.git"
+    targetRevision: HEAD
+    path: components/network-policies/overlays/west
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: openshift-network-policies
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+    - CreateNamespace=true
+    - ServerSideApply=true
+  revisionHistoryLimit: 10

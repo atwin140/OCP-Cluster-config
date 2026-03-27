@@ -1,0 +1,19 @@
+# West cluster observability overlay.
+# Uses gp3-csi (AWS EBS GP3) with the same production retention as east.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+commonAnnotations:
+  cluster.name: west
+  cluster.region: us-west-2
+
+resources:
+- ../../base
+
+patches:
+- path: patch-cluster-monitoring.yaml
+  target:
+    version: v1
+    kind: ConfigMap
+    name: cluster-monitoring-config
+    namespace: openshift-monitoring

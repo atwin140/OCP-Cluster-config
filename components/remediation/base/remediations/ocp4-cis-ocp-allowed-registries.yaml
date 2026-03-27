@@ -1,0 +1,29 @@
+# Control: ocp4-cis-ocp-allowed-registries / ocp4-cis-ocp-allowed-registries-for-import
+# NIST SP 800-53 Rev. 5
+# Primary controls:
+# - SA-12 - Supply Chain Protection
+# - SI-7  - Software, Firmware, and Information Integrity
+# - CM-7  - Least Functionality
+# Intent: Restrict runtime image pulls and imports to approved registries only.
+# WARNING: Ensure all required OpenShift internal, mirror, and platform registries
+#          are listed before applying to a production cluster.
+apiVersion: config.openshift.io/v1
+kind: Image
+metadata:
+  name: cluster
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  registrySources:
+    allowedRegistries:
+    - registry.redhat.io
+    - quay.io
+    - image-registry.openshift-image-registry.svc:5000
+    # - your-mirror-registry.example.com
+  allowedRegistriesForImport:
+  - domainName: registry.redhat.io
+    insecure: false
+  - domainName: quay.io
+    insecure: false
+  # - domainName: your-mirror-registry.example.com
+  #   insecure: false

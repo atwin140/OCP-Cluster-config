@@ -1,0 +1,15 @@
+# OperatorGroup – scopes the Compliance Operator to openshift-compliance only.
+# targetNamespaces lists the namespace where the operator watches for CRDs.
+apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  name: compliance-operator
+  namespace: openshift-compliance
+  labels:
+    app.kubernetes.io/part-of: compliance-operator
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  targetNamespaces:
+  - openshift-compliance

@@ -1,0 +1,14 @@
+# East cluster remediation overlay.
+# Inherits all base remediations without modification.
+# To exclude a specific remediation for the east cluster, use a patch or
+# remove the resource reference here.
+# To add east-specific remediations, list additional resource files below.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+commonAnnotations:
+  cluster.name: east
+  cluster.region: us-east-1
+
+resources:
+- ../../base

@@ -1,0 +1,65 @@
+# Default deny-all ingress NetworkPolicy for platform namespaces.
+# Place a copy of this policy (or a more specific policy) in every namespace
+# that needs to enforce CIS network segmentation controls.
+# This base file targets the 'openshift-network-policies' placeholder namespace.
+# Overlay patches can add namespace-specific allow rules on top.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-ingress
+  namespace: openshift-network-policies
+  labels:
+    app.kubernetes.io/part-of: network-policies
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    # SC-7: Boundary Protection – deny all intra-cluster ingress by default.
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+---
+# Allow ingress from the OpenShift router (HAProxy) to pods that serve HTTP/HTTPS.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-from-openshift-ingress
+  namespace: openshift-network-policies
+  labels:
+    app.kubernetes.io/part-of: network-policies
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          policy-group.network.openshift.io/ingress: ""
+---
+# Allow monitoring scrape traffic from openshift-monitoring.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-from-openshift-monitoring
+  namespace: openshift-network-policies
+  labels:
+    app.kubernetes.io/part-of: network-policies
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: openshift-monitoring
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: openshift-user-workload-monitoring

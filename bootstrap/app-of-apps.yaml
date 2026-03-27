@@ -1,0 +1,86 @@
+# Bootstrap ApplicationSet – apply ONCE manually to seed Argo CD.
+#
+#   oc apply -k bootstrap/
+#
+# Uses the Git directory generator to auto-discover every first-level folder
+# under clusters/.  Adding a new cluster requires only creating the folder
+# clusters/<name>/ with its apps/ sub-directory; Argo CD will generate the
+# <name>-cluster-config Application automatically on the next reconciliation.
+#
+# This ApplicationSet is intentionally NOT managed by another Application in
+# order to avoid a bootstrap chicken-and-egg problem; keep it out of any parent
+# kustomization resources list.
+#
+# Flow:
+#   bootstrap/ (this file)
+#     └─ generates one Application per clusters/*/
+#           └─ each Application renders clusters/<name>/apps/ (kustomize)
+#                 └─ which contains child Application CRs for platform services
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: cluster-onboarding
+  namespace: openshift-gitops
+  labels:
+    app.kubernetes.io/part-of: cluster-onboarding
+    tier: app-of-apps
+spec:
+  # Do NOT delete cluster Applications when the ApplicationSet is deleted;
+  # require an explicit cluster offboarding.
+  syncPolicy:
+    preserveResourcesOnDeletion: true
+
+  generators:
+  - git:
+      # Replace with your actual repository URL.
+      repoURL: "https://github.com/REPLACE_ME/OCP-Cluster-config.git"
+      revision: HEAD
+      # Match only direct sub-directories of clusters/ (one level deep).
+      directories:
+      - path: "clusters/*"
+
+  template:
+    metadata:
+      # Produces names like: cluster001-cluster-config, cluster002-cluster-config
+      name: "{{path.basename}}-cluster-config"
+      namespace: openshift-gitops
+      labels:
+        app.kubernetes.io/part-of: cluster-onboarding
+        cluster.name: "{{path.basename}}"
+      annotations:
+        # Wave 1: deploy after the AppProject (wave 0) is synced and healthy.
+        argocd.argoproj.io/sync-wave: "1"
+    spec:
+      project: cluster-onboarding
+
+      source:
+        # Replace with your actual repository URL.
+        repoURL: "https://github.com/REPLACE_ME/OCP-Cluster-config.git"
+        targetRevision: HEAD
+        # Each cluster folder's apps/ directory composes reusable group bundles
+        # (for example: groups/all + groups/east + groups/non-prod).
+        path: "clusters/{{path.basename}}/apps"
+
+      # Destination is the hub cluster – this Application creates Argo CD
+      # Application and AppProject CRs in openshift-gitops, not spoke workloads.
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: openshift-gitops
+
+      syncPolicy:
+        automated:
+          # Remove Application CRs from openshift-gitops when deleted from Git.
+          prune: true
+          # Revert any out-of-band changes (drift detection).
+          selfHeal: true
+        syncOptions:
+        - CreateNamespace=false
+        - ServerSideApply=true
+        retry:
+          limit: 5
+          backoff:
+            duration: 5s
+            factor: 2
+            maxDuration: 3m
+
+      revisionHistoryLimit: 10

@@ -1,0 +1,45 @@
+# ScanSetting – base configuration applied to all clusters.
+# autoApplyRemediations is false: remediations are reviewed manually in Git
+# before being applied (controlled remediation workflow).
+# strictNodeScan: true aborts the scan if it cannot enumerate all node roles
+# rather than silently skipping nodes.
+# rawResultStorage keeps 3 rotations of 1 Gi result PVCs.
+# Per-cluster schedule and storageClassName are overridden via overlay patches.
+apiVersion: compliance.openshift.io/v1alpha1
+kind: ScanSetting
+metadata:
+  name: stig-scan-setting
+  namespace: openshift-compliance
+  labels:
+    app.kubernetes.io/part-of: compliance-operator
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+spec:
+  # Safety: never auto-apply remediations – all changes go through Git review.
+  autoApplyRemediations: false
+  autoUpdateRemediations: false
+
+  # Fail fast if the operator cannot enumerate all node roles.
+  strictNodeScan: true
+
+  # Scan both control-plane and compute nodes.
+  roles:
+  - master
+  - worker
+  # Default scan schedule (UTC). Override per-cluster via overlay patch.
+  schedule: "0 1 * * *"
+
+  # Raw scan result PVC configuration.  storageClassName is overridden per cluster.
+  rawResultStorage:
+    pvAccessModes:
+    - ReadWriteOnce
+    rotation: 3
+    size: 1Gi
+    storageClassName: gp3-csi
+
+  # Tolerate the master NoSchedule taint so scan pods run on control-plane nodes.
+  scanTolerations:
+  - effect: NoSchedule
+    key: node-role.kubernetes.io/master
+    operator: Exists

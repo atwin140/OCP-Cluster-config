@@ -1,0 +1,21 @@
+# Kustomize manifest for components/remediation/base/.
+# Contains all CIS/STIG hardening remediations that are common across clusters.
+# Override or exclude individual remediations per-cluster via overlay patches.
+#
+# Sync-wave ordering (within the east/west/lab-remediation Application):
+#   wave 1 → IngressController TLS settings
+#   wave 1 → Image allowed-registries (cluster config)
+#   wave 2 → SCC restrictions (applied after TLS is configured)
+#   wave 3 → Network policies (applied last; workloads must exist)
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+- remediations/ocp4-cis-ingress-controller-tls-cipher-suites.yaml
+- remediations/ocp4-cis-ocp-allowed-registries.yaml
+- remediations/ocp4-cis-scc-limit-container-allowed-capabilities.yaml
+- remediations/ocp4-cis-configure-network-policies-namespaces.yaml
+
+commonLabels:
+  app.kubernetes.io/part-of: compliance-remediation
+  app.kubernetes.io/managed-by: argocd

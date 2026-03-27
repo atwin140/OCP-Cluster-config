@@ -1,0 +1,22 @@
+# Kustomize manifest for components/compliance-operator/base/.
+# Sync-wave ordering within the Argo CD Application:
+#   wave 0 → namespace.yaml           (Namespace)
+#   wave 1 → operatorgroup.yaml       (OperatorGroup)
+#   wave 2 → subscription.yaml        (Subscription / operator install)
+#   wave 3 → scan-setting.yaml        (ScanSetting – after operator CRDs are ready)
+#   wave 4 → scan-setting-binding.yaml (ScanSettingBinding – triggers first scan)
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: openshift-compliance
+
+resources:
+- namespace.yaml
+- operatorgroup.yaml
+- subscription.yaml
+- scan-setting.yaml
+- scan-setting-binding.yaml
+
+commonLabels:
+  app.kubernetes.io/part-of: compliance-operator
+  app.kubernetes.io/managed-by: argocd

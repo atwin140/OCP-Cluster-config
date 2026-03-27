@@ -1,0 +1,12 @@
+# Lab cluster remediation overlay.
+# Lab uses the same base remediations as prod, enabling early testing of
+# policy changes before they are promoted to east/west.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+commonAnnotations:
+  cluster.name: lab
+  cluster.region: us-east-1
+
+resources:
+- ../../base
