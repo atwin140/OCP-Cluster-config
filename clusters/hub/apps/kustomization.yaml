@@ -6,6 +6,7 @@ namePrefix: hub-
 
 resources:
 - ../../../groups/all
+- ../../../groups/hub
 # - ../../../groups/east
 # - ../../../groups/non-prod
 
