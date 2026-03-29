@@ -23,3 +23,5 @@ spec:
   additionalOptions:
   - name: metrics-enabled
     value: "true"
+  - name: proxy-headers
+    value: "xforwarded"
