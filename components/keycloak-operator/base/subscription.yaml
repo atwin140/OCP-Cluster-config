@@ -3,7 +3,7 @@ kind: Subscription
 metadata:
   name: rhbk-operator
   labels:
-    operators.coreos.com/rhbk-operator.default: ""
+    operators.coreos.com/rhbk-operator.keycloak: ""
   namespace: keycloak
   annotations:
     argocd.argoproj.io/sync-wave: "2"
