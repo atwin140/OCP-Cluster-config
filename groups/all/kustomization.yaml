@@ -4,4 +4,5 @@ kind: Kustomization
 resources:
 - compliance-operator.yaml
 - observability.yaml
-- gitea.yaml
+
+# - gitea.yaml
