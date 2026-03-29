@@ -6,6 +6,7 @@ metadata:
   annotations:
     argocd.argoproj.io/sync-wave: "4"
 spec:
+  host: keycloak.apps.acm.sharkbait.tech
   to:
     kind: Service
     name: hub-keycloak-service

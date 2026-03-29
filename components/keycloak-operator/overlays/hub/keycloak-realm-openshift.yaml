@@ -1,0 +1,66 @@
+apiVersion: k8s.keycloak.org/v2alpha1
+kind: KeycloakRealmImport
+metadata:
+  name: hub-keycloak-realm-openshift
+  namespace: keycloak
+  annotations:
+    argocd.argoproj.io/sync-wave: "5"
+spec:
+  keycloakCRName: hub-keycloak
+  realm:
+    realm: openshift
+    displayName: OpenShift
+    enabled: true
+    # Token / session settings
+    accessTokenLifespan: 300 # 5 min
+    ssoSessionMaxLifespan: 36000 # 10 hours
+    ssoSessionIdleTimeout: 1800 # 30 min
+    # Enforce secure login
+    sslRequired: external
+    # User registration / password policy
+    registrationAllowed: false
+    bruteForceProtected: true
+    # -- OpenShift OAuth client ------------------------------------------------
+    clients:
+    - clientId: openshift
+      name: OpenShift
+      description: OpenShift OAuth integration
+      enabled: true
+      protocol: openid-connect
+      publicClient: false
+      # IMPORTANT: This secret must match the value in the
+      # keycloak-oidc-client-secret Secret in openshift-config.
+      secret: "06UklA1EFVJd7u1p+FTAmPUvXe1SWNUtyVS9vakA6yU="
+      # Add your OCP OAuth callback URL here:
+      # https://<oauth-server>/oauth2callback/keycloak
+      redirectUris:
+      - "https://oauth-openshift.apps.acm.sharkbait.tech/oauth2callback/keycloak"
+      webOrigins:
+      - "+"
+      standardFlowEnabled: true
+      implicitFlowEnabled: false
+      directAccessGrantsEnabled: false
+      serviceAccountsEnabled: false
+      attributes:
+        pkce.code.challenge.method: S256
+    # -- Groups ---------------------------------------------------------------
+    groups:
+    - name: cluster-admins
+      path: /cluster-admins
+    # -- Scopes & mappers ------------------------------------------------------
+    clientScopes:
+    - name: groups
+      description: OpenShift group membership
+      protocol: openid-connect
+      attributes:
+        include.in.token.scope: "true"
+      protocolMappers:
+      - name: groups
+        protocol: openid-connect
+        protocolMapper: oidc-group-membership-mapper
+        config:
+          full.path: "false"
+          id.token.claim: "true"
+          access.token.claim: "true"
+          userinfo.token.claim: "true"
+          claim.name: groups

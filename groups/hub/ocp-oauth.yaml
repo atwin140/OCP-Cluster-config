@@ -1,0 +1,28 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: ocp-oauth
+  namespace: openshift-gitops
+  labels:
+    app.kubernetes.io/part-of: cluster-onboarding
+    component: ocp-oauth
+    group.cluster: hub
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  project: cluster-config
+  source:
+    repoURL: "git@github.com:atwin140/OCP-Cluster-config.git"
+    targetRevision: HEAD
+    path: components/ocp-oauth/overlays/hub
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: openshift-config
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+    - CreateNamespace=false
+    - ServerSideApply=true
+  revisionHistoryLimit: 10
