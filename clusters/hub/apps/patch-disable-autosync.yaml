@@ -1,2 +1,4 @@
+# Enable this patch from kustomization.yaml to remove automated sync from all hub apps.
+# To turn auto-sync back off, uncomment the patch-disable-autosync block in this directory's kustomization.yaml.
 - op: remove
   path: /spec/syncPolicy/automated
