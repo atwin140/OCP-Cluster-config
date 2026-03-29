@@ -196,17 +196,162 @@ If `Done: False` with a message, the import failed — see [Troubleshooting](#tr
 
 ---
 
-## Step 8 — Verify the realm and client via Keycloak API
+## Step 8 — Verify the realm and client
+
+### 8a. Confirm the realm exists
 
 ```bash
-# Refresh token if needed (see Step 1)
-
-# Confirm realm exists
+# Refresh TOKEN if needed (see Step 1)
 curl -s -H "Authorization: Bearer ${TOKEN}" \
   "https://${KEYCLOAK_HOST}/admin/realms/openshift" \
   | jq '{realm, enabled}'
+# Expect: { "realm": "openshift", "enabled": true }
+```
 
-# Confirm openshift client config
+### 8b. Confirm the `openshift` client was created correctly
+
+```bash
+curl -s -H "Authorization: Bearer ${TOKEN}" \
+  "https://${KEYCLOAK_HOST}/admin/realms/openshift/clients" \
+  | jq '.[] | select(.clientId=="openshift") | {clientId, redirectUris, publicClient, standardFlowEnabled, secret}'
+```
+
+Expected output:
+
+```json
+{
+  "clientId": "openshift",
+  "redirectUris": ["https://oauth-openshift.<your-domain>/oauth2callback/keycloak"],
+  "publicClient": false,
+  "standardFlowEnabled": true
+}
+```
+
+- `publicClient` must be `false` (confidential client)
+- `redirectUris` must match your actual OpenShift redirect URI (`$REDIRECT_URI`)
+- `secret` field should be present (not empty)
+
+---
+
+## Step 8c — Manually create or repair the client (if the import failed)
+
+If the realm import completed but the `openshift` client is missing or wrong, use the
+Keycloak Admin UI or API to create it manually.
+
+### Via the Keycloak Admin UI
+
+1. Open `https://${KEYCLOAK_HOST}` → log in as `admin`
+2. Switch to the **`openshift`** realm (top-left dropdown)
+3. Go to **Clients** → **Create client**
+4. Fill in:
+   - **Client type**: OpenID Connect
+   - **Client ID**: `openshift`
+   - Click **Next**
+5. On the **Capability config** screen:
+   - Enable **Client authentication** (makes it a confidential client)
+   - Leave **Standard flow** enabled
+   - Disable everything else (Direct access grants, Implicit flow, etc.)
+   - Click **Next**
+6. On the **Login settings** screen:
+   - **Valid redirect URIs**: `https://oauth-openshift.<your-apps-domain>/oauth2callback/keycloak`
+   - **Web origins**: `+`
+   - Click **Save**
+7. Go to the **Credentials** tab:
+   - Copy the **Client secret** — this is your `$SECRET` value
+   - Or click **Regenerate** to create a new one, then update the cluster secrets (Step 5)
+
+> **Important**: Do NOT enable PKCE (`Advanced` tab → `Proof Key for Code Exchange`).
+> OpenShift OAuth does not support PKCE and the login will fail with `Invalid redirect_uri`.
+
+### Via the Keycloak API
+
+```bash
+# Create the client
+curl -s -X POST \
+  "https://${KEYCLOAK_HOST}/admin/realms/openshift/clients" \
+  -H "Authorization: Bearer ${TOKEN}" \
+  -H "Content-Type: application/json" \
+  -d "{
+    \"clientId\": \"openshift\",
+    \"name\": \"OpenShift\",
+    \"description\": \"OpenShift OAuth integration\",
+    \"enabled\": true,
+    \"protocol\": \"openid-connect\",
+    \"publicClient\": false,
+    \"secret\": \"${SECRET}\",
+    \"standardFlowEnabled\": true,
+    \"implicitFlowEnabled\": false,
+    \"directAccessGrantsEnabled\": false,
+    \"serviceAccountsEnabled\": false,
+    \"redirectUris\": [\"${REDIRECT_URI}\"],
+    \"webOrigins\": [\"+\"]
+  }"
+# Expect: HTTP 201 Created
+
+# Confirm it was created
+curl -s -H "Authorization: Bearer ${TOKEN}" \
+  "https://${KEYCLOAK_HOST}/admin/realms/openshift/clients" \
+  | jq '.[] | select(.clientId=="openshift") | {clientId, redirectUris, publicClient}'
+```
+
+### 8d. Add the `groups` client scope (required for group sync)
+
+The realm import also creates a `groups` scope with the group membership mapper. If you
+created the client manually or the scope is missing:
+
+```bash
+# Create the groups scope
+SCOPE_ID=$(curl -s -X POST \
+  "https://${KEYCLOAK_HOST}/admin/realms/openshift/client-scopes" \
+  -H "Authorization: Bearer ${TOKEN}" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "groups",
+    "description": "OpenShift group membership",
+    "protocol": "openid-connect",
+    "attributes": {"include.in.token.scope": "true"}
+  }' -w "\n%{http_code}" | tail -1)
+
+# Get the scope ID
+SCOPE_ID=$(curl -s -H "Authorization: Bearer ${TOKEN}" \
+  "https://${KEYCLOAK_HOST}/admin/realms/openshift/client-scopes" \
+  | jq -r '.[] | select(.name=="groups") | .id')
+
+# Add the group membership mapper to it
+curl -s -X POST \
+  "https://${KEYCLOAK_HOST}/admin/realms/openshift/client-scopes/${SCOPE_ID}/protocol-mappers/models" \
+  -H "Authorization: Bearer ${TOKEN}" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "groups",
+    "protocol": "openid-connect",
+    "protocolMapper": "oidc-group-membership-mapper",
+    "config": {
+      "full.path": "true",
+      "id.token.claim": "true",
+      "access.token.claim": "true",
+      "userinfo.token.claim": "true",
+      "claim.name": "groups"
+    }
+  }'
+
+# Assign the scope to the openshift client
+CLIENT_ID=$(curl -s -H "Authorization: Bearer ${TOKEN}" \
+  "https://${KEYCLOAK_HOST}/admin/realms/openshift/clients" \
+  | jq -r '.[] | select(.clientId=="openshift") | .id')
+
+curl -s -X PUT \
+  "https://${KEYCLOAK_HOST}/admin/realms/openshift/clients/${CLIENT_ID}/optional-client-scopes/${SCOPE_ID}" \
+  -H "Authorization: Bearer ${TOKEN}"
+# Expect: HTTP 204
+```
+
+---
+
+## Step 9 — Verify the realm and client via Keycloak API (summary check)
+
+```bash
+# Confirm openshift client config (quick summary)
 curl -s -H "Authorization: Bearer ${TOKEN}" \
   "https://${KEYCLOAK_HOST}/admin/realms/openshift/clients" \
   | jq '.[] | select(.clientId=="openshift") | {clientId, redirectUris, publicClient, standardFlowEnabled}'
@@ -217,7 +362,7 @@ Expected `redirectUris` value: `["https://oauth-openshift.<your-domain>/oauth2ca
 
 ---
 
-## Step 9 — Verify OCP login
+## Step 10 — Verify OCP login
 
 1. Open a private/incognito browser tab.
 2. Navigate to the OpenShift console: `https://console-openshift-console.${APPS_DOMAIN}`
@@ -237,7 +382,7 @@ oc get oauth cluster -o yaml
 
 ---
 
-## Step 10 — Clean up the patched YAML
+## Step 11 — Clean up the patched YAML
 
 After confirming login works, revert the secret placeholder so it is not accidentally committed:
 
@@ -249,7 +394,7 @@ git diff components/keycloak-operator/overlays/hub/keycloak-realm-openshift.yaml
 # Should show only the secret line reverting to CHANGE_ME, nothing else
 ```
 
-Then commit and push all other changes (PKCE removal, etc.) using your normal GitOps workflow.
+Then commit and push all other changes using your normal GitOps workflow.
 
 ---
 
@@ -268,6 +413,7 @@ Common causes:
 - `secret: "CHANGE_ME"` was not replaced before apply → redo Step 4 and Step 6
 - Keycloak pod not ready yet → wait and retry
 - Realm already exists → redo Step 2b to delete it first
+- Import succeeded but client is wrong → see Step 8c to repair manually
 
 ### `Client not found` error in browser
 
@@ -287,7 +433,7 @@ curl -s -H "Authorization: Bearer ${TOKEN}" \
   | jq '.[] | select(.clientId=="openshift") | .redirectUris'
 ```
 
-If they differ, update [keycloak-realm-openshift.yaml](keycloak-realm-openshift.yaml) and redo Steps 2–8.
+If they differ, update [keycloak-realm-openshift.yaml](keycloak-realm-openshift.yaml) and redo Steps 2–9.
 
 ### `invalid_grant` in GroupSync
 
