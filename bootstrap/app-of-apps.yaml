@@ -51,11 +51,11 @@ spec:
         # Wave 1: deploy after the AppProject (wave 0) is synced and healthy.
         argocd.argoproj.io/sync-wave: "1"
     spec:
-      project: cluster-onboarding
+      project: cluster-config
 
       source:
         # Replace with your actual repository URL.
-        repoURL: "https://github.com/REPLACE_ME/OCP-Cluster-config.git"
+        repoURL: "git@github.com:atwin140/OCP-Cluster-config.git"
         targetRevision: HEAD
         # Each cluster folder's apps/ directory composes reusable group bundles
         # (for example: groups/all + groups/east + groups/non-prod).
