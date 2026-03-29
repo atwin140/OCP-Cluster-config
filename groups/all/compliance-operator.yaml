@@ -9,9 +9,9 @@ metadata:
   annotations:
     argocd.argoproj.io/sync-wave: "1"
 spec:
-  project: platform-services
+  project: cluster-config
   source:
-    repoURL: "https://github.com/REPLACE_ME/OCP-Cluster-config.git"
+    repoURL: "git@github.com:atwin140/OCP-Cluster-config.git"
     targetRevision: HEAD
     path: components/compliance-operator/overlays/east
   destination:
