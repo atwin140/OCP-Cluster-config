@@ -11,8 +11,8 @@ spec:
     name: hub-keycloak-service
     weight: 100
   port:
-    targetPort: https
+    targetPort: http
   tls:
-    termination: reencrypt
+    termination: edge
     insecureEdgeTerminationPolicy: Redirect
   wildcardPolicy: None

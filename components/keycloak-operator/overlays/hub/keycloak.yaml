@@ -9,7 +9,7 @@ spec:
   # Single replica default for hub bootstrap; scale after validation.
   instances: 1
   ingress:
-    enabled: true
+    enabled: false
   http:
     httpEnabled: true
     labels:
