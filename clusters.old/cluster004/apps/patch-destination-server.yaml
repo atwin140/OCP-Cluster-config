@@ -1,0 +1,3 @@
+- op: replace
+  path: /spec/destination/server
+  value: https://cluster004-api.example.com:6443

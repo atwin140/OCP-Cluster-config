@@ -1,0 +1,63 @@
+# Gitea Helm values — lab overlay
+# Chart: https://dl.gitea.com/charts/  version: 10.x
+# Ref:   https://gitea.com/gitea/helm-chart
+
+gitea:
+  admin:
+    username: gitea_admin
+    # IMPORTANT: Set password via a SealedSecret or Vault reference.
+    # Do NOT commit a plaintext password here.
+    password: "changeme" # REPLACE with secret management
+    email: "admin@sharkbait.tech"
+
+  config:
+    server:
+      PROTOCOL: http
+      DOMAIN: "" # leave blank → auto from Route
+      ROOT_URL: "" # leave blank → auto from Route
+    database:
+      DB_TYPE: sqlite3
+    session:
+      PROVIDER: memory
+    cache:
+      ADAPTER: memory
+    queue:
+      TYPE: level
+
+service:
+  http:
+    type: ClusterIP
+    port: 3000
+  ssh:
+    type: ClusterIP
+    port: 22
+
+ingress:
+  enabled: false # Use OpenShift Route instead
+
+# OpenShift-compatible security context (SCC: restricted)
+podSecurityContext:
+  fsGroup: null
+
+containerSecurityContext:
+  runAsNonRoot: true
+  runAsUser: null
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+    - ALL
+
+persistence:
+  enabled: true
+  size: 5Gi # Smaller for lab use
+  # storageClass: ""                # Uncomment and set your StorageClass
+
+  # Disable bundled Redis and PostgreSQL — suitable for lab.
+redis-cluster:
+  enabled: false
+
+postgresql-ha:
+  enabled: false
+
+postgresql:
+  enabled: false

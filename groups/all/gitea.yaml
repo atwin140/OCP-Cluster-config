@@ -1,0 +1,30 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: gitea
+  namespace: openshift-gitops
+  labels:
+    app.kubernetes.io/part-of: cluster-onboarding
+    component: gitea
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  project: platform-services
+  source:
+    repoURL: "https://github.com/REPLACE_ME/OCP-Cluster-config.git"
+    targetRevision: HEAD
+    path: components/gitea/overlays/west
+    kustomize:
+      buildOptions: "--enable-helm"
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: gitea
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+    - CreateNamespace=true
+    - ServerSideApply=true
+    - RespectIgnoreDifferences=true
+  revisionHistoryLimit: 10
