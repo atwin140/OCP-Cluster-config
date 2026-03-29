@@ -9,8 +9,11 @@ spec:
     keycloak:
       url: https://keycloak.apps.acm.sharkbait.tech
       realm: openshift
-      loginRealm: master
+      loginRealm: openshift
       scope: sub
       prune: false
+      credentialsSecret:
+        name: keycloak-group-sync
+        namespace: group-sync-operator
       groups:
-      - name: cluster-admins
+      - openshift-access

@@ -7,6 +7,9 @@ roleRef:
   kind: ClusterRole
   name: cluster-admin
 subjects:
-  - apiGroup: rbac.authorization.k8s.io
-    kind: Group
-    name: cluster-admins
+- apiGroup: rbac.authorization.k8s.io
+  kind: Group
+  name: cluster-admins
+- apiGroup: rbac.authorization.k8s.io
+  kind: Group
+  name: /openshift-access/cluster-admins
