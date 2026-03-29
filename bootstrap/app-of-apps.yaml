@@ -33,7 +33,7 @@ spec:
   generators:
   - git:
       # Replace with your actual repository URL.
-      repoURL: "https://github.com/REPLACE_ME/OCP-Cluster-config.git"
+      repoURL: "git@github.com:atwin140/OCP-Cluster-config.git"
       revision: HEAD
       # Match only direct sub-directories of clusters/ (one level deep).
       directories:
