@@ -6,6 +6,8 @@ namespace: keycloak
 resources:
 - namespace.yaml
 - operatorgroup.yaml
+- argocd-keycloak-role.yaml
+- argocd-keycloak-rolebinding.yaml
 - subscription.yaml
 
 commonLabels:
