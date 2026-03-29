@@ -1,0 +1,17 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+- ../../operators/group-sync-operator
+- ../../instances/keycloak-group-sync
+
+patches:
+- path: patch-groupsync.yaml
+  target:
+    group: redhatcop.redhat.io
+    version: v1alpha1
+    kind: GroupSync
+    name: keycloak-groupsync
+
+commonAnnotations:
+  cluster.role: local

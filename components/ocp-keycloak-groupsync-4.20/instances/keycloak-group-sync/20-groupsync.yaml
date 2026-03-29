@@ -1,0 +1,25 @@
+apiVersion: redhatcop.redhat.io/v1alpha1
+kind: GroupSync
+metadata:
+  name: keycloak-groupsync
+  namespace: group-sync-operator
+spec:
+  schedule: "*/15 * * * *"
+  providers:
+    - name: keycloak
+      keycloak:
+        url: https://keycloak.example.com
+        realm: master
+        loginRealm: master
+        scope: one
+        prune: false
+        credentialsSecret:
+          name: keycloak-group-sync
+          namespace: group-sync-operator
+        ca:
+          kind: ConfigMap
+          name: keycloak-certs
+          namespace: group-sync-operator
+          key: ca.crt
+        groups:
+          - name: cluster-admins

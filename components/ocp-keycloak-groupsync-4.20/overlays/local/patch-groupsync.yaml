@@ -1,0 +1,16 @@
+apiVersion: redhatcop.redhat.io/v1alpha1
+kind: GroupSync
+metadata:
+  name: keycloak-groupsync
+  namespace: group-sync-operator
+spec:
+  providers:
+  - name: keycloak
+    keycloak:
+      url: https://keycloak.apps.acm.sharkbait.tech
+      realm: openshift
+      loginRealm: master
+      scope: sub
+      prune: false
+      groups:
+      - name: cluster-admins

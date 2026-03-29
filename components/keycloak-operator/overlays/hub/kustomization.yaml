@@ -11,4 +11,3 @@ resources:
 - ../../base
 - keycloak.yaml
 - keycloak-route.yaml
-- keycloak-realm-openshift.yaml

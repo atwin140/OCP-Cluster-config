@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: keycloak-certs
+  namespace: group-sync-operator
+data:
+  ca.crt: |
+    -----BEGIN CERTIFICATE-----
+    CHANGE_ME
+    -----END CERTIFICATE-----
