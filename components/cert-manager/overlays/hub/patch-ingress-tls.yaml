@@ -1,0 +1,12 @@
+# Patches the default IngressController to serve the Let's Encrypt wildcard TLS
+# certificate issued by cert-manager instead of the default self-signed OCP certificate.
+apiVersion: operator.openshift.io/v1
+kind: IngressController
+metadata:
+  name: default
+  namespace: openshift-ingress-operator
+  annotations:
+    argocd.argoproj.io/sync-wave: "6"
+spec:
+  defaultCertificate:
+    name: cluster-wildcard-tls

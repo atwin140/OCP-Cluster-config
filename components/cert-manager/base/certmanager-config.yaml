@@ -1,0 +1,24 @@
+# Configures the cert-manager controller to use public DNS resolvers (Cloudflare 1.1.1.1
+# and Google 8.8.8.8) for DNS-01 ACME challenge propagation checks.
+#
+# This is required in split-brain DNS environments (e.g. home lab with a local DNS server
+# overriding the zone) where the cluster's internal DNS does not have visibility into the
+# ACME TXT records written by the Cloudflare webhook. Without this setting, cert-manager
+# queries the cluster DNS -> local DNS server which has no knowledge of the
+# _acme-challenge TXT records, causing propagation checks to fail indefinitely.
+#
+# --dns01-recursive-nameservers-only prevents fallback to system/cluster DNS.
+apiVersion: operator.openshift.io/v1alpha1
+kind: CertManager
+metadata:
+  name: cluster
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+spec:
+  logLevel: Normal
+  managementState: Managed
+  operatorLogLevel: Normal
+  controllerConfig:
+    overrideArgs:
+      - "--dns01-recursive-nameservers-only"
+      - "--dns01-recursive-nameservers=1.1.1.1:53,8.8.8.8:53"
