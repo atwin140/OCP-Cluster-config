@@ -1,7 +1,8 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
-  - 00-keycloak-credentials-secret.yaml
-  - 10-keycloak-ca-configmap.yaml
-  - 20-groupsync.yaml
-  - 30-cluster-admin-binding.yaml
+# - 00-keycloak-credentials-secret.yaml  #add before the operator to ensure the secret is created before the operator tries to use it
+## Use this commnad to apply the file oc apply -f components/ocp-keycloak-groupsync-4.20/instances/keycloak-group-sync/00-keycloak-credentials-secret.yaml 
+- 10-keycloak-ca-configmap.yaml
+- 20-groupsync.yaml
+- 30-cluster-admin-binding.yaml
