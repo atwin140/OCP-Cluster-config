@@ -16,5 +16,3 @@ resources:
 - compliance-app-project.yaml
 - east-compliance-scanning.yaml
 - west-compliance-scanning.yaml
-
-!Kube-is-the-way!10

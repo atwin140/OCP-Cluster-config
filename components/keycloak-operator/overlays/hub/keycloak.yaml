@@ -1,0 +1,25 @@
+apiVersion: k8s.keycloak.org/v2alpha1
+kind: Keycloak
+metadata:
+  name: hub-keycloak
+  namespace: keycloak
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+spec:
+  # Single replica default for hub bootstrap; scale after validation.
+  instances: 1
+  ingress:
+    enabled: true
+  http:
+    httpEnabled: true
+    labels:
+      app.kubernetes.io/component: keycloak-http
+    annotations:
+      service.beta.openshift.io/serving-cert-secret-name: hub-keycloak-tls
+  hostname:
+    strict: false
+  networkPolicy:
+    enabled: true
+  additionalOptions:
+  - name: metrics-enabled
+    value: "true"
