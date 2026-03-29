@@ -10,7 +10,7 @@ metadata:
   annotations:
     argocd.argoproj.io/sync-wave: "1"
 spec:
-  project: platform-services
+  project: cluster-config
   source:
     repoURL: "git@github.com:atwin140/OCP-Cluster-config.git"
     targetRevision: HEAD
