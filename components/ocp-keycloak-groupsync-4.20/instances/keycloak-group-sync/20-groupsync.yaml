@@ -3,6 +3,8 @@ kind: GroupSync
 metadata:
   name: keycloak-groupsync
   namespace: group-sync-operator
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
 spec:
   schedule: "*/15 * * * *"
   providers:
