@@ -32,12 +32,13 @@ echo "Redirect : ${REDIRECT_URI}"
 ## Step 1 — Get a Keycloak admin token
 
 ```bash
+USER=$(oc get secret hub-keycloak-initial-admin -n keycloak -o jsonpath='{.data.username}' | base64 -d)
 ADMIN_PASS=$(oc get secret hub-keycloak-initial-admin \
   -n keycloak -o jsonpath='{.data.password}' | base64 -d)
-
+echo $USER "  -  "$ADMIN_PASS
 TOKEN=$(curl -s -X POST \
   "https://${KEYCLOAK_HOST}/realms/master/protocol/openid-connect/token" \
-  -d "client_id=admin-cli&grant_type=password&username=admin&password=${ADMIN_PASS}" \
+  -d "client_id=admin-cli&grant_type=password&username=${USER}&password=${ADMIN_PASS}" \
   | jq -r '.access_token')
 
 # Verify — should print a long JWT string, not "null"
@@ -99,29 +100,30 @@ export SECRET='paste-your-secret-here'
 
 ---
 
-## Step 4 — Patch the realm import YAML with the real secret
+## Step 4 — Confirm the realm import YAML is correct
 
-The file [keycloak-realm-openshift.yaml](keycloak-realm-openshift.yaml) contains `secret: "CHANGE_ME"` as a placeholder.  
-Replace it with your chosen secret before committing/applying:
+The file [keycloak-realm-openshift.yaml](keycloak-realm-openshift.yaml) uses a runtime placeholder
+for the client secret — **no manual patching required**:
 
-```bash
-sed -i '' "s/secret: \"CHANGE_ME\"/secret: \"${SECRET}\"/" \
-  components/keycloak-operator/overlays/hub/keycloak-realm-openshift.yaml
+```yaml
+spec:
+  keycloakCRName: hub-keycloak
+  placeholders:
+    CLIENT_SECRET:
+      secret:
+        name: hub-keycloak-realm-config
+        key: clientSecret
+  realm:
+    clients:
+    - clientId: openshift
+      secret: "${CLIENT_SECRET}"   # resolved at runtime from the cluster secret
 ```
 
-Verify:
+The Keycloak operator reads `clientSecret` from the `hub-keycloak-realm-config` Secret at
+import time and substitutes it. No plaintext secret ever enters Git.
 
-```bash
-grep 'secret:' components/keycloak-operator/overlays/hub/keycloak-realm-openshift.yaml
-# Should show your real secret value, not CHANGE_ME
-```
-
-> **Do not commit the secret value to Git.** After confirming that the import worked (Step 8), revert the file back to `CHANGE_ME` before pushing:
->
-> ```bash
-> sed -i '' "s/secret: \"${SECRET}\"/secret: \"CHANGE_ME\"/" \
->   components/keycloak-operator/overlays/hub/keycloak-realm-openshift.yaml
-> ```
+> **Note:** This mechanism only works when the operator can reach the database (i.e., PostgreSQL
+> is configured). With the default H2 setup, use Step 6b (Admin API) instead.
 
 ---
 
@@ -155,22 +157,142 @@ Both secrets must hold the **same** `clientSecret` value.
 
 ## Step 6 — Apply the realm import
 
-ArgoCD will recreate the `KeycloakRealmImport` CR on its next sync, triggering a fresh import.  
+> **Important — known limitation with H2 storage**
+>
+> The Keycloak operator's `KeycloakRealmImport` creates a short-lived Job pod that runs
+> `kc.sh import` using the **same database as the main Keycloak instance**.
+> If Keycloak is configured with the default embedded H2 file database (no `db:` section
+> in the Keycloak CR and no PostgreSQL deployed), the import job cannot share the H2 file
+> with the running pod — it imports into its own throwaway H2 and the main instance never
+> sees the realm.
+>
+> **Signs of this problem:** the import Job pod logs show `Installed features: [jdbc-h2]`
+> or `Initializing database schema` (fresh empty DB), but after the job completes the realm
+> is not visible via the admin API.
+>
+> **Workaround:** skip the operator import and create the realm directly via the Admin API
+> (Step 6b below).
+>
+> **Long-term fix:** deploy a PostgreSQL instance and add a `db:` block to the `hub-keycloak`
+> CR so both the main server and the import job share the same persistent database. Until then,
+> any realm data is also lost on pod restart.
+
+### 6a. Let ArgoCD sync (if using PostgreSQL)
+
+ArgoCD will recreate the `KeycloakRealmImport` CR on its next sync, triggering a fresh import.
 Force a sync now:
 
 ```bash
-# Option A — via ArgoCD CLI
 argocd app sync keycloak-operator --force
-
-# Option B — trigger via oc (ArgoCD server URL depends on your environment)
-# patch the app annotation to request a refresh, then sync from UI
 ```
 
-Alternatively, apply the kustomize overlay directly to force immediate creation:
+Or apply the kustomize overlay directly:
 
 ```bash
 oc apply -k components/keycloak-operator/overlays/hub/
 ```
+
+Monitor progress — see Step 7.
+
+### 6b. Create realm directly via Admin API (H2 / no PostgreSQL)
+
+Run the script below. It refreshes the token at each step to avoid the 60-second expiry:
+
+```bash
+export APPS_DOMAIN=$(oc get ingress.config.openshift.io cluster -o jsonpath='{.spec.domain}')
+export KEYCLOAK_HOST="keycloak.${APPS_DOMAIN}"
+export REDIRECT_URI="https://oauth-openshift.${APPS_DOMAIN}/oauth2callback/keycloak"
+export SECRET=$(oc get secret hub-keycloak-realm-config -n keycloak \
+  -o jsonpath='{.data.clientSecret}' | base64 -d)
+
+USER=$(oc get secret hub-keycloak-initial-admin -n keycloak -o jsonpath='{.data.username}' | base64 -d)
+ADMIN_PASS=$(oc get secret hub-keycloak-initial-admin -n keycloak -o jsonpath='{.data.password}' | base64 -d)
+ktoken() {
+  curl -s -X POST "https://${KEYCLOAK_HOST}/realms/master/protocol/openid-connect/token" \
+    -d "client_id=admin-cli&grant_type=password&username=${USER}&password=${ADMIN_PASS}" \
+    | jq -r '.access_token'
+}
+
+# 1. Create realm
+TOKEN=$(ktoken)
+curl -s -X POST "https://${KEYCLOAK_HOST}/admin/realms" \
+  -H "Authorization: Bearer ${TOKEN}" -H "Content-Type: application/json" \
+  -d '{"realm":"openshift","displayName":"OpenShift","enabled":true,"sslRequired":"external","registrationAllowed":false,"bruteForceProtected":true}' \
+  -w "\nHTTP %{http_code}\n"
+# Expect: HTTP 201 (or 409 if realm already exists — that is fine)
+
+# 2. Create openshift client
+TOKEN=$(ktoken)
+curl -s -X POST "https://${KEYCLOAK_HOST}/admin/realms/openshift/clients" \
+  -H "Authorization: Bearer ${TOKEN}" -H "Content-Type: application/json" \
+  -d "{\"clientId\":\"openshift\",\"name\":\"OpenShift\",\"description\":\"OpenShift OAuth integration\",\"enabled\":true,\"protocol\":\"openid-connect\",\"publicClient\":false,\"secret\":\"${SECRET}\",\"standardFlowEnabled\":true,\"implicitFlowEnabled\":false,\"directAccessGrantsEnabled\":false,\"serviceAccountsEnabled\":false,\"redirectUris\":[\"${REDIRECT_URI}\"],\"webOrigins\":[\"+\"]}" \
+  -w "\nHTTP %{http_code}\n"
+# Expect: HTTP 201
+
+# 3. Create groups
+TOKEN=$(ktoken)
+curl -s -X POST "https://${KEYCLOAK_HOST}/admin/realms/openshift/groups" \
+  -H "Authorization: Bearer ${TOKEN}" -H "Content-Type: application/json" \
+  -d '{"name":"openshift-access"}' -w "\nHTTP %{http_code}\n"
+# Expect: HTTP 201 (or 409 if already exists)
+
+TOKEN=$(ktoken)
+GROUP_ID=$(curl -s "https://${KEYCLOAK_HOST}/admin/realms/openshift/groups" \
+  -H "Authorization: Bearer ${TOKEN}" | jq -r '.[] | select(.name=="openshift-access") | .id')
+TOKEN=$(ktoken)
+curl -s -X POST "https://${KEYCLOAK_HOST}/admin/realms/openshift/groups/${GROUP_ID}/children" \
+  -H "Authorization: Bearer ${TOKEN}" -H "Content-Type: application/json" \
+  -d '{"name":"cluster-admins"}' -w "\nHTTP %{http_code}\n"
+# Expect: HTTP 201 (or 409 if already exists)
+
+# 4. Create groups client scope with group membership mapper
+TOKEN=$(ktoken)
+curl -s -X POST "https://${KEYCLOAK_HOST}/admin/realms/openshift/client-scopes" \
+  -H "Authorization: Bearer ${TOKEN}" -H "Content-Type: application/json" \
+  -d '{"name":"groups","description":"OpenShift group membership","protocol":"openid-connect","attributes":{"include.in.token.scope":"true"}}' \
+  -w "\nHTTP %{http_code}\n"
+# Expect: HTTP 201 (or 409 if already exists)
+
+TOKEN=$(ktoken)
+SCOPE_ID=$(curl -s "https://${KEYCLOAK_HOST}/admin/realms/openshift/client-scopes" \
+  -H "Authorization: Bearer ${TOKEN}" | jq -r '.[] | select(.name=="groups") | .id')
+TOKEN=$(ktoken)
+curl -s -X POST "https://${KEYCLOAK_HOST}/admin/realms/openshift/client-scopes/${SCOPE_ID}/protocol-mappers/models" \
+  -H "Authorization: Bearer ${TOKEN}" -H "Content-Type: application/json" \
+  -d '{"name":"groups","protocol":"openid-connect","protocolMapper":"oidc-group-membership-mapper","config":{"full.path":"true","id.token.claim":"true","access.token.claim":"true","userinfo.token.claim":"true","claim.name":"groups"}}' \
+  -w "\nHTTP %{http_code}\n"
+# Expect: HTTP 201 (or 409 if already exists)
+
+# 5. Assign groups scope to openshift client (optional, enables groups in token)
+TOKEN=$(ktoken)
+CLIENT_ID=$(curl -s "https://${KEYCLOAK_HOST}/admin/realms/openshift/clients" \
+  -H "Authorization: Bearer ${TOKEN}" | jq -r '.[] | select(.clientId=="openshift") | .id')
+TOKEN=$(ktoken)
+curl -s -X PUT \
+  "https://${KEYCLOAK_HOST}/admin/realms/openshift/clients/${CLIENT_ID}/optional-client-scopes/${SCOPE_ID}" \
+  -H "Authorization: Bearer ${TOKEN}" -w "\nHTTP %{http_code}\n"
+# Expect: HTTP 204
+
+# 6. Assign email and profile as default client scopes (required by OpenShift OAuth)
+TOKEN=$(ktoken)
+EMAIL_SCOPE=$(curl -s "https://${KEYCLOAK_HOST}/admin/realms/openshift/client-scopes" \
+  -H "Authorization: Bearer ${TOKEN}" | jq -r '.[] | select(.name=="email") | .id')
+TOKEN=$(ktoken)
+PROFILE_SCOPE=$(curl -s "https://${KEYCLOAK_HOST}/admin/realms/openshift/client-scopes" \
+  -H "Authorization: Bearer ${TOKEN}" | jq -r '.[] | select(.name=="profile") | .id')
+TOKEN=$(ktoken)
+curl -s -X PUT "https://${KEYCLOAK_HOST}/admin/realms/openshift/clients/${CLIENT_ID}/default-client-scopes/${EMAIL_SCOPE}" \
+  -H "Authorization: Bearer ${TOKEN}" -w "\nHTTP %{http_code}\n"
+# Expect: HTTP 204
+TOKEN=$(ktoken)
+curl -s -X PUT "https://${KEYCLOAK_HOST}/admin/realms/openshift/clients/${CLIENT_ID}/default-client-scopes/${PROFILE_SCOPE}" \
+  -H "Authorization: Bearer ${TOKEN}" -w "\nHTTP %{http_code}\n"
+# Expect: HTTP 204
+```
+
+> **Common errors from skipping steps above:**
+> - `Invalid scopes: email groups openid profile` — steps 4 or 6 were skipped; `email`/`profile` not assigned
+> - `Group name may not contain '/'` — step 4 mapper has `full.path: true`; fix by updating mapper or recreating scope
 
 ---
 
@@ -382,19 +504,17 @@ oc get oauth cluster -o yaml
 
 ---
 
-## Step 11 — Clean up the patched YAML
+## Step 11 — Commit and push
 
-After confirming login works, revert the secret placeholder so it is not accidentally committed:
+The realm import YAML no longer contains any plaintext secrets — the `${CLIENT_SECRET}` placeholder
+is resolved at runtime by the operator. You can safely commit and push:
 
 ```bash
-sed -i '' "s/secret: \"${SECRET}\"/secret: \"CHANGE_ME\"/" \
-  components/keycloak-operator/overlays/hub/keycloak-realm-openshift.yaml
-
-git diff components/keycloak-operator/overlays/hub/keycloak-realm-openshift.yaml
-# Should show only the secret line reverting to CHANGE_ME, nothing else
+git add components/keycloak-operator/overlays/hub/
+git diff --staged
+git commit -m "keycloak: configure openshift realm import with runtime secret placeholder"
+git push
 ```
-
-Then commit and push all other changes using your normal GitOps workflow.
 
 ---
 
@@ -410,7 +530,8 @@ oc logs -n keycloak deployment/keycloak-operator --tail=100 | grep -i "realm\|er
 ```
 
 Common causes:
-- `secret: "CHANGE_ME"` was not replaced before apply → redo Step 4 and Step 6
+- Import job used H2 instead of PostgreSQL (see the H2 limitation note in Step 6) → use Step 6b
+- `hub-keycloak-realm-config` Secret missing → redo Step 5a, then re-trigger the import
 - Keycloak pod not ready yet → wait and retry
 - Realm already exists → redo Step 2b to delete it first
 - Import succeeded but client is wrong → see Step 8c to repair manually
