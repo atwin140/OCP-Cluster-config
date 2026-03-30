@@ -1,3 +1,0 @@
-- op: replace
-  path: /spec/destination/server
-  value: https://kubernetes.default.svc
