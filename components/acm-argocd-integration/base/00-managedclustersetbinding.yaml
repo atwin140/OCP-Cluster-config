@@ -1,0 +1,9 @@
+# Binds the 'default' ManagedClusterSet to the openshift-gitops namespace so that
+# Placements and GitOpsClusters in that namespace can reference clusters in this set.
+apiVersion: cluster.open-cluster-management.io/v1beta2
+kind: ManagedClusterSetBinding
+metadata:
+  name: default
+  namespace: openshift-gitops
+spec:
+  clusterSet: default

@@ -1,0 +1,3 @@
+- op: replace
+  path: /spec/destination/server
+  value: https://api.cluster01.sharkbait.tech:6443

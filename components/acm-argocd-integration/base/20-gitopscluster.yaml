@@ -1,0 +1,15 @@
+# Registers all clusters selected by the Placement with the openshift-gitops ArgoCD instance.
+# ACM will create an ArgoCD cluster secret for each PlacementDecision cluster automatically.
+apiVersion: apps.open-cluster-management.io/v1beta1
+kind: GitOpsCluster
+metadata:
+  name: argocd-clusters
+  namespace: openshift-gitops
+spec:
+  argoServer:
+    cluster: local-cluster
+    argoNamespace: openshift-gitops
+  placementRef:
+    kind: Placement
+    apiVersion: cluster.open-cluster-management.io/v1beta1
+    name: argocd-clusters

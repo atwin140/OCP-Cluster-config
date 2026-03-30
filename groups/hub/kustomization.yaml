@@ -4,3 +4,4 @@ kind: Kustomization
 resources:
 - keycloak-operator.yaml
 - cert-manager.yaml
+- acm-argocd-integration.yaml
