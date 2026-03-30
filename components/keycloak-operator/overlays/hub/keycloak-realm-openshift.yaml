@@ -7,6 +7,11 @@ metadata:
     argocd.argoproj.io/sync-wave: "5"
 spec:
   keycloakCRName: hub-keycloak
+  placeholders:
+    CLIENT_SECRET:
+      secret:
+        name: hub-keycloak-realm-config
+        key: clientSecret
   realm:
     realm: openshift
     displayName: OpenShift
@@ -21,8 +26,7 @@ spec:
       enabled: true
       protocol: openid-connect
       publicClient: false
-      # Must match openshift-config/keycloak-oidc-client-secret (clientSecret key).
-      secret: "CHANGE_ME"
+      secret: "${CLIENT_SECRET}"
       standardFlowEnabled: true
       implicitFlowEnabled: false
       directAccessGrantsEnabled: false
