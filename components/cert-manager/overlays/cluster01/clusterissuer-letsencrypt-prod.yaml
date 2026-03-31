@@ -16,6 +16,6 @@ spec:
           apiTokenSecretRef:
             key: api-token
             # Secret must be created manually in the cert-manager namespace:
-            oc create secret generic cloudflare-api-token-secret \
-              --from-literal=api-token=cfat_4wM080EXVeVlHqTVdl1ZUSzTkZfuiBoJqW1YcY8Fb9477b9f -n cert-manager
+            # oc create secret generic cloudflare-api-token-secret \
+            #   --from-literal=api-token= -n cert-manager
             name: cloudflare-api-token-secret
