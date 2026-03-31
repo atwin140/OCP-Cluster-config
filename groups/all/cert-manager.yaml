@@ -1,0 +1,26 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cert-manager
+  namespace: openshift-gitops
+  labels:
+    app.kubernetes.io/part-of: cluster-onboarding
+    component: cert-manager
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  project: cluster-config
+  source:
+    repoURL: "git@github.com:atwin140/OCP-Cluster-config.git"
+    targetRevision: HEAD
+    path: components/cert-manager/overlays/cluster01
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: openshift-config
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+    - ServerSideApply=true
+  revisionHistoryLimit: 10

@@ -6,8 +6,8 @@ namePrefix: cluster2-
 
 resources:
 - ../../../groups/all
-- ../../../groups/east
-- ../../../groups/non-prod
+# - ../../../groups/east
+# - ../../../groups/non-prod
 
 patches:
 - path: patch-destination-server.yaml
