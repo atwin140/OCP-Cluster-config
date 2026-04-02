@@ -22,7 +22,7 @@ data:
           memory: 512Mi
       volumeClaimTemplate:
         spec:
-          storageClassName: gp3-csi
+          storageClassName: synology-iscsi-storage
           resources:
             requests:
               storage: 40Gi

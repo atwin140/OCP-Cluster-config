@@ -17,14 +17,14 @@ data:
       retention: 15d
       volumeClaimTemplate:
         spec:
-          storageClassName: gp3-csi
+          storageClassName: synology-iscsi-storage
           resources:
             requests:
               storage: 100Gi
     alertmanagerMain:
       volumeClaimTemplate:
         spec:
-          storageClassName: gp3-csi
+          storageClassName: synology-iscsi-storage
           resources:
             requests:
               storage: 10Gi
