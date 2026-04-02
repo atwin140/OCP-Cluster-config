@@ -1,0 +1,15 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: cluster-wildcard
+  namespace: openshift-ingress
+  annotations:
+    argocd.argoproj.io/sync-wave: "5"
+spec:
+  dnsNames:
+  - '*.apps.cluster03.sharkbait.tech'
+  - apps.cluster03.sharkbait.tech
+  issuerRef:
+    kind: ClusterIssuer
+    name: letsencrypt-prod
+  secretName: cluster-wildcard-tls
