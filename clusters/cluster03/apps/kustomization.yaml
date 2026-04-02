@@ -1,0 +1,23 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: openshift-gitops
+namePrefix: cluster3-
+
+resources:
+- ../../../groups/all
+# - ../../../groups/east
+# - ../../../groups/non-prod
+
+patches:
+- path: patch-destination-server.yaml
+  target:
+    group: argoproj.io
+    version: v1alpha1
+    kind: Application
+- path: patch-cert-manager-source.yaml
+  target:
+    group: argoproj.io
+    version: v1alpha1
+    kind: Application
+    name: cert-manager
