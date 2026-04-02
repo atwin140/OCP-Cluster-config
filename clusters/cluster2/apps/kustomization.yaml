@@ -15,3 +15,9 @@ patches:
     group: argoproj.io
     version: v1alpha1
     kind: Application
+- path: patch-cert-manager-source.yaml
+  target:
+    group: argoproj.io
+    version: v1alpha1
+    kind: Application
+    name: cert-manager
