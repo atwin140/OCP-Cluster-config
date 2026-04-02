@@ -25,3 +25,8 @@ spec:
     value: "true"
   - name: proxy-headers
     value: "xforwarded"
+  storage:
+    type: persistent
+    size: 10Gi
+    class: ""
+    deleteClaim: false
