@@ -4,8 +4,8 @@ kind: Kustomization
 resources:
 - keycloak-group-sync.yaml
 - ocp-oauth.yaml
-- compliance-operator.yaml
-- observability.yaml
+# - compliance-operator.yaml
+# - observability.yaml
 - cert-manager.yaml
 
 # - gitea.yaml
