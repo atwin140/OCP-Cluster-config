@@ -1,0 +1,33 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: acs
+  namespace: openshift-gitops
+  labels:
+    app.kubernetes.io/part-of: cluster-onboarding
+    component: acs
+    group.cluster: hub
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  project: cluster-config
+  source:
+    repoURL: "git@github.com:atwin140/OCP-Cluster-config.git"
+    targetRevision: main
+    path: components/acs/overlays/hub
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: rhacs-operator
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+    - CreateNamespace=true
+    - ServerSideApply=true
+  ignoreDifferences:
+  - group: operators.coreos.com
+    kind: Subscription
+    jsonPointers:
+    - /status
+  revisionHistoryLimit: 10

@@ -33,6 +33,10 @@ spec:
       serviceAccountsEnabled: false
       redirectUris:
       - "https://oauth-openshift.apps.acm.sharkbait.tech/oauth2callback/keycloak"
+      - "https://oauth-openshift.apps.cluster01.sharkbait.tech/oauth2callback/keycloak"
+      - "https://oauth-openshift.apps.cluster02.sharkbait.tech/oauth2callback/keycloak"
+      - "https://oauth-openshift.apps.cluster03.sharkbait.tech/oauth2callback/keycloak"
+      - "https://oauth-openshift.apps.cluster04.sharkbait.tech/oauth2callback/keycloak"
       webOrigins:
       - "+"
       optionalClientScopes:
