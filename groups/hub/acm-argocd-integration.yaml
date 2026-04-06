@@ -12,7 +12,7 @@ spec:
   project: cluster-config
   source:
     repoURL: "git@github.com:atwin140/OCP-Cluster-config.git"
-    targetRevision: HEAD
+    targetRevision: main
     path: components/acm-argocd-integration/base
   destination:
     server: https://kubernetes.default.svc
