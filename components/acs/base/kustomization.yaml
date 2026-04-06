@@ -3,6 +3,8 @@
 #   wave 0 → namespace.yaml              (Namespace: rhacs-operator)
 #   wave 0 → stackrox-namespace.yaml     (Namespace: stackrox)
 #   wave 1 → operatorgroup.yaml          (OperatorGroup)
+#   wave 1 → argocd-acs-role.yaml        (Role – grants ArgoCD access to ACS CRs)
+#   wave 1 → argocd-acs-rolebinding.yaml (RoleBinding)
 #   wave 2 → subscription.yaml           (Subscription / operator install)
 #   wave 3 → central.yaml                (Central CR – after operator CRDs are ready)
 apiVersion: kustomize.config.k8s.io/v1beta1
@@ -12,6 +14,8 @@ resources:
 - namespace.yaml
 - stackrox-namespace.yaml
 - operatorgroup.yaml
+- argocd-acs-role.yaml
+- argocd-acs-rolebinding.yaml
 - subscription.yaml
 - central.yaml
 
