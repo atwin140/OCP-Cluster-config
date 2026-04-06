@@ -13,7 +13,7 @@ spec:
   project: cluster-config
   source:
     repoURL: "git@github.com:atwin140/OCP-Cluster-config.git"
-    targetRevision: HEAD
+    targetRevision: main
     path: components/keycloak-operator/overlays/hub
   destination:
     server: https://kubernetes.default.svc
