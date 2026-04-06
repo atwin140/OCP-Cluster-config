@@ -9,6 +9,8 @@ commonAnnotations:
 
 resources:
 - ../../base
+- postgresql-secret.yaml
+- postgresql.yaml
 - keycloak.yaml
 - keycloak-route.yaml
 - keycloak-realm-openshift.yaml

@@ -35,6 +35,8 @@ spec:
       - "https://oauth-openshift.apps.acm.sharkbait.tech/oauth2callback/keycloak"
       webOrigins:
       - "+"
+      optionalClientScopes:
+      - groups
     groups:
     - name: openshift-access
     - name: cluster-admins
@@ -45,10 +47,13 @@ spec:
       protocol: openid-connect
       attributes:
         include.in.token.scope: "true"
+        display.on.consent.screen: "false"
+        consent.screen.text: ""
       protocolMappers:
       - name: groups
         protocol: openid-connect
         protocolMapper: oidc-group-membership-mapper
+        consentRequired: false
         config:
           full.path: "false"
           id.token.claim: "true"

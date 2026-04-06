@@ -20,13 +20,19 @@ spec:
     strict: false
   networkPolicy:
     enabled: true
+  db:
+    vendor: postgres
+    host: keycloak-postgresql
+    port: 5432
+    database: keycloak
+    usernameSecret:
+      name: keycloak-db-secret
+      key: username
+    passwordSecret:
+      name: keycloak-db-secret
+      key: password
   additionalOptions:
   - name: metrics-enabled
     value: "true"
   - name: proxy-headers
     value: "xforwarded"
-  storage:
-    type: persistent
-    size: 10Gi
-    class: ""
-    deleteClaim: false
