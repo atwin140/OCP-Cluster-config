@@ -15,6 +15,7 @@ spec:
       persistence:
         persistentVolumeClaim:
           claimName: central-db
+          storageClassName: synology-iscsi-ext4
   egress:
     connectivityPolicy: Online
   scanner:
@@ -25,3 +26,10 @@ spec:
         minReplicas: 2
         replicas: 3
     scannerComponent: Enabled
+  scannerV4:
+    db:
+      persistence:
+        persistentVolumeClaim:
+          claimName: scanner-v4-db
+          storageClassName: synology-iscsi-ext4
+    scannerComponent: Default
