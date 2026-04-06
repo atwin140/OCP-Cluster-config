@@ -1,0 +1,20 @@
+# Kustomize manifest for components/acs/base/.
+# Sync-wave ordering within the Argo CD Application:
+#   wave 0 → namespace.yaml              (Namespace: rhacs-operator)
+#   wave 0 → stackrox-namespace.yaml     (Namespace: stackrox)
+#   wave 1 → operatorgroup.yaml          (OperatorGroup)
+#   wave 2 → subscription.yaml           (Subscription / operator install)
+#   wave 3 → central.yaml                (Central CR – after operator CRDs are ready)
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+- namespace.yaml
+- stackrox-namespace.yaml
+- operatorgroup.yaml
+- subscription.yaml
+- central.yaml
+
+commonLabels:
+  app.kubernetes.io/part-of: acs
+  app.kubernetes.io/managed-by: argocd

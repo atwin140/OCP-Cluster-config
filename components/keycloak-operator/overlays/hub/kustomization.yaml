@@ -9,6 +9,7 @@ commonAnnotations:
 
 resources:
 - ../../base
+- storageclass-synology-ext4.yaml
 - postgresql-secret.yaml
 - postgresql.yaml
 - keycloak.yaml
