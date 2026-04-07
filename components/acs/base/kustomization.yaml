@@ -17,7 +17,6 @@ resources:
 - argocd-acs-role.yaml
 - argocd-acs-rolebinding.yaml
 - subscription.yaml
-- central.yaml
 
 commonLabels:
   app.kubernetes.io/part-of: acs
