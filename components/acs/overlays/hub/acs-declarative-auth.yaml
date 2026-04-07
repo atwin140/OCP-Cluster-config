@@ -6,7 +6,7 @@ metadata:
   annotations:
     argocd.argoproj.io/sync-wave: "3"
 data:
-  auth-provider.yaml: |
+  auth-provider.yaml: |+
     name: "OpenShift Authentication"
     minimumRole: "Analyst"
     uiEndpoint: "central-stackrox.apps.acm.sharkbait.tech"
@@ -16,3 +16,4 @@ data:
     - key: "groups"
       value: "system:cluster-admins"
       role: "Admin"
+      
