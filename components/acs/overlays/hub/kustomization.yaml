@@ -7,3 +7,7 @@ commonAnnotations:
 
 resources:
 - ../../base
+- acs-declarative-auth.yaml
+
+patches:
+- path: central-declarative-config-patch.yaml
