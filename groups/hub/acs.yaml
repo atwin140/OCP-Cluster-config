@@ -1,11 +1,11 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: acs
+  name: acs-central
   namespace: openshift-gitops
   labels:
     app.kubernetes.io/part-of: cluster-onboarding
-    component: acs
+    component: acs-central
     group.cluster: hub
   annotations:
     argocd.argoproj.io/sync-wave: "1"
