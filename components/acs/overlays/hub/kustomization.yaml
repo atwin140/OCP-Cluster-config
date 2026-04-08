@@ -6,7 +6,6 @@ commonAnnotations:
   cluster.role: management
 
 resources:
-- ../../base
 - acs-declarative-auth.yaml
 - central.yaml
 
