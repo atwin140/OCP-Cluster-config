@@ -17,6 +17,7 @@ resources:
 - argocd-acs-role.yaml
 - argocd-acs-rolebinding.yaml
 - subscription.yaml
+- clustertest-cluster-registration-secret-sealed.yaml
 
 commonLabels:
   app.kubernetes.io/part-of: acs
