@@ -5,8 +5,9 @@ resources:
 - keycloak-group-sync.yaml
 - ocp-oauth.yaml
 - acs.yaml
+- cert-manager.yaml
 # - compliance-operator.yaml
 # - observability.yaml
-- cert-manager.yaml
+- sealed-secrets.yaml
 
 # - gitea.yaml
