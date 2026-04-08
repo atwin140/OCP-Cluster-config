@@ -8,7 +8,7 @@ metadata:
 data:
   auth-provider.yaml: |+
     name: "OpenShift Authentication"
-    minimumRole: "Analyst,Admin"
+    minimumRole: "Admin"
     uiEndpoint: "central-stackrox.apps.acm.sharkbait.tech"
     openshift:
       enable: true
