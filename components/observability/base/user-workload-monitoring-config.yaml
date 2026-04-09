@@ -22,7 +22,7 @@ data:
           memory: 512Mi
       volumeClaimTemplate:
         spec:
-          storageClassName: synology-iscsi-storage
+          storageClassName: synology-iscsi-ext4
           resources:
             requests:
               storage: 40Gi

@@ -13,7 +13,7 @@ spec:
   source:
     repoURL: "git@github.com:atwin140/OCP-Cluster-config.git"
     targetRevision: HEAD
-    path: components/observability/overlays/east
+    path: components/observability/overlays/lab
   destination:
     server: https://kubernetes.default.svc
     namespace: openshift-monitoring
