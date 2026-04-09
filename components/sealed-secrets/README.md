@@ -60,7 +60,7 @@ Seal a Secret
 kubeseal \
   --format yaml \
   --cert sealed-secrets-cert.pem \
-  < ./clustertest-cluster-registration-secret.yaml > ../clustertest-cluster-registration-secret-sealed.yaml
+  < clustertest-cluster-registration-secret.yaml > clustertest-cluster-registration-secret-sealed.yaml
 ```
 
 Create and seal in one command

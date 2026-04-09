@@ -14,7 +14,7 @@ metadata:
     app.kubernetes.io/part-of: compliance-operator
     app.kubernetes.io/managed-by: argocd
   annotations:
-    argocd.argoproj.io/sync-wave: "3"
+    argocd.argoproj.io/sync-wave: "20"
 spec:
   # Safety: never auto-apply remediations – all changes go through Git review.
   autoApplyRemediations: false

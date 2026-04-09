@@ -11,4 +11,4 @@ metadata:
     app.kubernetes.io/part-of: compliance-operator
     app.kubernetes.io/managed-by: argocd
   annotations:
-    argocd.argoproj.io/sync-wave: "0"
+    argocd.argoproj.io/sync-wave: "1"

@@ -11,11 +11,11 @@ kind: Kustomization
 namespace: openshift-compliance
 
 resources:
-- namespace.yaml
-- operatorgroup.yaml
-- subscription.yaml
-- scan-setting.yaml
-- scan-setting-binding.yaml
+- 01-namespace.yaml
+- 05-operatorgroup.yaml
+- 10-subscription.yaml
+- 20-scan-setting.yaml
+- 15-scan-setting-binding.yaml
 
 commonLabels:
   app.kubernetes.io/part-of: compliance-operator

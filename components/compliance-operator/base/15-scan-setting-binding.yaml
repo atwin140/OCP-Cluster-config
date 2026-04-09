@@ -12,8 +12,8 @@ metadata:
     app.kubernetes.io/part-of: compliance-operator
     app.kubernetes.io/managed-by: argocd
   annotations:
-    # Wave 4: wait for ScanSetting (wave 3) to be healthy before binding.
-    argocd.argoproj.io/sync-wave: "4"
+    # Wave 15: wait for ScanSetting (wave 14) to be healthy before binding.
+    argocd.argoproj.io/sync-wave: "15"
 spec:
   profiles:
   - apiGroup: compliance.openshift.io/v1alpha1

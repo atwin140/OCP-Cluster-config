@@ -10,7 +10,7 @@ metadata:
     app.kubernetes.io/part-of: compliance-operator
     app.kubernetes.io/managed-by: argocd
   annotations:
-    argocd.argoproj.io/sync-wave: "2"
+    argocd.argoproj.io/sync-wave: "10"
 spec:
   channel: stable
   name: compliance-operator

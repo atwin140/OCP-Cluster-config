@@ -7,7 +7,7 @@ metadata:
     app.kubernetes.io/part-of: cluster-onboarding
     component: compliance-operator
   annotations:
-    argocd.argoproj.io/sync-wave: "1"
+    argocd.argoproj.io/sync-wave: "0"
 spec:
   project: cluster-config
   source:
