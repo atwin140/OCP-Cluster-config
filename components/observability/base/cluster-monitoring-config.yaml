@@ -17,14 +17,14 @@ data:
       retention: 15d
       volumeClaimTemplate:
         spec:
-          storageClassName: synology-iscsi-ext4
+          storageClassName: synology-nfs-storage
           resources:
             requests:
               storage: 100Gi
     alertmanagerMain:
       volumeClaimTemplate:
         spec:
-          storageClassName: synology-iscsi-ext4
+          storageClassName: synology-nfs-storage
           resources:
             requests:
               storage: 10Gi
