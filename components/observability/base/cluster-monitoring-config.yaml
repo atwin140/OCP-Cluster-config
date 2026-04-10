@@ -17,7 +17,7 @@ data:
       retention: 15d
       volumeClaimTemplate:
         spec:
-          storageClassName: synology-nfs-storage
+          storageClassName: synology-nfs-storage-pro
           resources:
             requests:
               storage: 100Gi
