@@ -1,0 +1,30 @@
+# =============================================================================
+# Service — exposes the application inside the cluster
+# =============================================================================
+# Type: ClusterIP — traffic comes in via Route (OpenShift) or Ingress (vanilla k8s)
+# The Route/Ingress terminates TLS and forwards plain HTTP to port 8080.
+# =============================================================================
+apiVersion: v1
+kind: Service
+metadata:
+  name: shark-db
+  namespace: shark-db
+  labels:
+    app.kubernetes.io/name: shark-db
+    app.kubernetes.io/part-of: shark-database
+    app.kubernetes.io/component: app
+  annotations:
+    # Prometheus scraping — if you add /metrics support later
+    # prometheus.io/scrape: "true"
+    # prometheus.io/port: "8080"
+    # prometheus.io/path: "/metrics"
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: shark-db
+    app.kubernetes.io/component: app
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
+      protocol: TCP

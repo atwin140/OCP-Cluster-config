@@ -1,0 +1,63 @@
+# =============================================================================
+# Kustomize Overlay — Development / Lab environment
+# =============================================================================
+# Differences from base:
+#   - 1 replica (single-node lab)
+#   - Smaller resource limits
+#   - Image uses :dev tag (latest CI build)
+#   - Different namespace (shark-db-dev)
+#   - Route uses dev hostname
+# =============================================================================
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: shark-db-dev
+
+resources:
+  - ../../base
+
+namePrefix: dev-
+
+# Override namespace for dev
+patches:
+  - target:
+      kind: Namespace
+      name: shark-db
+    patch: |-
+      - op: replace
+        path: /metadata/name
+        value: shark-db-dev
+
+  # Smaller resource limits for dev
+  - target:
+      kind: Deployment
+      name: shark-db
+    patch: |-
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/requests/cpu
+        value: "50m"
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/requests/memory
+        value: "64Mi"
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/limits/cpu
+        value: "250m"
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/limits/memory
+        value: "256Mi"
+
+  # Dev ConfigMap overrides
+  - target:
+      kind: ConfigMap
+      name: shark-db-config
+    patch: |-
+      - op: replace
+        path: /data/LOG_LEVEL
+        value: "debug"
+      - op: replace
+        path: /data/CORS_ORIGINS
+        value: "https://dev-shark-db-shark-db-dev.apps.your-cluster.example.com"
+
+images:
+  - name: quay.io/sharkdb/shark-db
+    newTag: "dev"

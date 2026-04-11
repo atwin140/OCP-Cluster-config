@@ -1,0 +1,190 @@
+# =============================================================================
+# Deployment — Shark Database application (monolith mode)
+# =============================================================================
+#
+# This Deployment runs the full Node.js application (React frontend + Express
+# backend + SQLite) in a single container — ideal for demos.
+#
+# OpenShift compatibility notes:
+#   - securityContext.runAsNonRoot: true  (enforced)
+#   - No specific runAsUser set — OpenShift will assign an arbitrary UID
+#     from the namespace's allowed UID range (openshift.io/sa.scc.uid-range)
+#   - allowPrivilegeEscalation: false
+#   - readOnlyRootFilesystem: true (writes go to /app/data and /tmp only)
+#   - seccompProfile: RuntimeDefault (compatible with OCP 4.11+)
+#   - Capabilities dropped to minimum
+#   - No privileged: true
+#   - Port 8080 (unprivileged)
+#
+# Resource sizing:
+#   Requests are intentionally small for demo/lab environments.
+#   Adjust limits for production based on expected load.
+# =============================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: shark-db
+  namespace: shark-db
+  labels:
+    app.kubernetes.io/name: shark-db
+    app.kubernetes.io/part-of: shark-database
+    app.kubernetes.io/component: app
+    app.kubernetes.io/version: "1.0.0"
+  annotations:
+    # ArgoCD will update this annotation during GitOps sync
+    deployment.kubernetes.io/revision: "1"
+spec:
+  replicas: 1
+  # NOTE: SQLite requires RWO — only 1 replica can write to the PVC at a time.
+  # For horizontal scaling, migrate to PostgreSQL + MongoDB.
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: shark-db
+      app.kubernetes.io/component: app
+  strategy:
+    type: Recreate   # Required for RWO PVC — no rolling update with SQLite
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: shark-db
+        app.kubernetes.io/component: app
+        app.kubernetes.io/part-of: shark-database
+        app.kubernetes.io/version: "1.0.0"
+      annotations:
+        # Force pod restart when ConfigMap or Secret changes
+        checksum/config: ""   # Populated by Kustomize or Helm
+    spec:
+      # ---------------------------------------------------------------------------
+      # Security context — Pod level
+      # OpenShift restricted SCC compliant
+      # ---------------------------------------------------------------------------
+      securityContext:
+        runAsNonRoot: true
+        # Do NOT set runAsUser here — let OpenShift assign one from the namespace range
+        fsGroup: 0            # GID 0 ensures group-writable files are accessible
+        seccompProfile:
+          type: RuntimeDefault
+
+      # Service account — use a dedicated SA, not default
+      serviceAccountName: shark-db-sa
+
+      # Init container — ensure the data directory has correct permissions
+      # This is important because OpenShift's arbitrary UID needs group-write
+      # access to the PVC mount point.
+      initContainers:
+        - name: init-permissions
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              mkdir -p /app/data
+              chmod -R g+rw /app/data
+              chown -R 0:0 /app/data
+              echo "Init complete. UID=$(id -u) GID=$(id -g)"
+          securityContext:
+            runAsNonRoot: false   # Needs to run briefly as root to chown
+            runAsUser: 0
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+              add: ["CHOWN", "FOWNER"]
+          volumeMounts:
+            - name: app-data
+              mountPath: /app/data
+
+      containers:
+        - name: shark-db
+          # Update this image reference to your registry after building:
+          # image: quay.io/your-org/shark-db:1.0.0
+          # image: image-registry.openshift-image-registry.svc:5000/shark-db/shark-db:latest
+          image: quay.io/sharkdb/shark-db:1.0.0
+          imagePullPolicy: Always
+
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+
+          # --- Environment ---
+          env:
+            - name: PORT
+              value: "8080"
+            - name: NODE_ENV
+              value: "production"
+          envFrom:
+            - configMapRef:
+                name: shark-db-config
+            - secretRef:
+                name: shark-db-secret
+
+          # --- Volume mounts ---
+          volumeMounts:
+            - name: app-data
+              mountPath: /app/data   # SQLite database file lives here
+            - name: tmp
+              mountPath: /tmp        # Needed for readOnlyRootFilesystem
+
+          # --- Security context — Container level ---
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            capabilities:
+              drop:
+                - ALL
+
+          # --- Resource requests and limits ---
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+
+          # --- Liveness probe ---
+          # Checks that the Express server is alive and responding.
+          # If this fails repeatedly, Kubernetes restarts the container.
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+
+          # --- Readiness probe ---
+          # Checks that the app is ready to serve traffic.
+          # During startup / seeding, the pod is not added to Service endpoints.
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+
+          # --- Startup probe ---
+          # Gives the app extra time on first boot (seed data loading).
+          startupProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            failureThreshold: 12   # 12 * 5s = 60s max startup time
+
+      # --- Volumes ---
+      volumes:
+        - name: app-data
+          persistentVolumeClaim:
+            claimName: shark-db-data
+        - name: tmp
+          emptyDir: {}   # Ephemeral /tmp for readOnlyRootFilesystem support
+
+      # Pod scheduling hints
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30

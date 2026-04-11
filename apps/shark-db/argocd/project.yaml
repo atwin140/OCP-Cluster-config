@@ -1,0 +1,67 @@
+# =============================================================================
+# ArgoCD AppProject — Shark Database
+# =============================================================================
+# An AppProject scopes what repositories, clusters, and namespaces the
+# Applications in this project can deploy to.
+#
+# Think of an AppProject as the "security boundary" — it prevents one team's
+# ArgoCD Applications from accidentally (or maliciously) deploying to another
+# team's namespace or from a repo they shouldn't be using.
+#
+# Apply:
+#   oc apply -f argocd/project.yaml -n argocd
+#   # OR: kubectl apply -f argocd/project.yaml -n argocd
+# =============================================================================
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: shark-database
+  namespace: argocd
+  labels:
+    app.kubernetes.io/part-of: shark-database
+  # Finalizer prevents the project from being deleted while Applications exist
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  description: "Shark Database GitOps demo application project"
+
+  # Source repositories this project may deploy from
+  sourceRepos:
+    - "https://github.com/your-org/shark-db.git"
+    - "https://github.com/your-org/shark-db-config.git"  # Optional separate config repo
+    # Allow any repo (for demos — restrict in production):
+    # - "*"
+
+  # Destination clusters and namespaces this project may deploy to
+  destinations:
+    - server: https://kubernetes.default.svc   # In-cluster
+      namespace: shark-db
+    - server: https://kubernetes.default.svc
+      namespace: shark-db-dev
+
+  # Cluster resource types this project may create
+  clusterResourceWhitelist:
+    - group: ""
+      kind: Namespace
+
+  # Namespace-scoped resource types this project may create
+  namespaceResourceWhitelist:
+    - group: "*"
+      kind: "*"
+
+  # Roles within this project
+  roles:
+    - name: developer
+      description: Developers — can sync and view, cannot delete apps
+      policies:
+        - p, proj:shark-database:developer, applications, get, shark-database/*, allow
+        - p, proj:shark-database:developer, applications, sync, shark-database/*, allow
+      groups:
+        - shark-db-developers   # Match your RBAC group name
+
+    - name: ops
+      description: Operations — full access to the project
+      policies:
+        - p, proj:shark-database:ops, applications, *, shark-database/*, allow
+      groups:
+        - shark-db-ops

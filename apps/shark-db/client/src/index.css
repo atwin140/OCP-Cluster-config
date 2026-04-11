@@ -1,0 +1,172 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================================
+   Shark Database — Design System
+   Deep-ocean aesthetic: midnight navy, electric cyan, warm amber
+   ============================================================ */
+
+@layer base {
+  :root {
+    /* --- Shark DB color palette (ocean-depth theme) --- */
+
+    /* Background surfaces */
+    --background:       220 28% 7%;      /* near-black deep ocean */
+    --foreground:       200 20% 92%;     /* off-white seafoam text */
+
+    --card:             220 24% 11%;     /* dark card surface */
+    --card-foreground:  200 20% 92%;
+
+    --popover:          220 24% 11%;
+    --popover-foreground: 200 20% 92%;
+
+    /* Primary — electric cyan (bioluminescence) */
+    --primary:          188 90% 48%;
+    --primary-foreground: 220 28% 7%;
+
+    /* Secondary — steel blue */
+    --secondary:        215 30% 22%;
+    --secondary-foreground: 200 20% 85%;
+
+    /* Muted — dark slate */
+    --muted:            220 20% 16%;
+    --muted-foreground: 215 15% 55%;
+
+    /* Accent — amber/gold (shark fin warning) */
+    --accent:           38 92% 55%;
+    --accent-foreground: 220 28% 7%;
+
+    /* Destructive — deep red */
+    --destructive:      0 72% 51%;
+    --destructive-foreground: 0 0% 98%;
+
+    /* Borders */
+    --border:           215 20% 20%;
+    --input:            215 20% 20%;
+    --ring:             188 90% 48%;
+
+    /* Chart colors */
+    --chart-1: 188 90% 48%;
+    --chart-2: 38 92% 55%;
+    --chart-3: 262 80% 65%;
+    --chart-4: 142 70% 50%;
+    --chart-5: 0 72% 51%;
+
+    --radius: 0.5rem;
+
+    /* Sidebar (same palette, slightly different shade) */
+    --sidebar-background:  220 28% 9%;
+    --sidebar-foreground:  200 20% 88%;
+    --sidebar-primary:     188 90% 48%;
+    --sidebar-primary-foreground: 220 28% 7%;
+    --sidebar-accent:      38 92% 55%;
+    --sidebar-accent-foreground: 220 28% 7%;
+    --sidebar-border:      215 20% 18%;
+    --sidebar-ring:        188 90% 48%;
+  }
+
+  /* Dark is the default for this app — light mode mirrors it slightly lighter */
+  .dark {
+    --background:       220 28% 7%;
+    --foreground:       200 20% 92%;
+    --card:             220 24% 11%;
+    --card-foreground:  200 20% 92%;
+    --popover:          220 24% 11%;
+    --popover-foreground: 200 20% 92%;
+    --primary:          188 90% 48%;
+    --primary-foreground: 220 28% 7%;
+    --secondary:        215 30% 22%;
+    --secondary-foreground: 200 20% 85%;
+    --muted:            220 20% 16%;
+    --muted-foreground: 215 15% 55%;
+    --accent:           38 92% 55%;
+    --accent-foreground: 220 28% 7%;
+    --destructive:      0 72% 51%;
+    --destructive-foreground: 0 0% 98%;
+    --border:           215 20% 20%;
+    --input:            215 20% 20%;
+    --ring:             188 90% 48%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+  }
+  /* Scrollbar styling */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: hsl(var(--muted));
+  }
+  ::-webkit-scrollbar-thumb {
+    background: hsl(var(--border));
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground));
+  }
+}
+
+/* ---- Utility classes ---- */
+
+.shark-gradient {
+  background: linear-gradient(
+    135deg,
+    hsl(220 28% 7%) 0%,
+    hsl(220 35% 12%) 40%,
+    hsl(200 40% 10%) 100%
+  );
+}
+
+.shark-card {
+  background: linear-gradient(
+    145deg,
+    hsl(220 24% 13%),
+    hsl(220 24% 10%)
+  );
+  border: 1px solid hsl(215 20% 20%);
+}
+
+.glow-cyan {
+  box-shadow: 0 0 20px hsl(188 90% 48% / 0.2);
+}
+
+.glow-cyan:hover {
+  box-shadow: 0 0 30px hsl(188 90% 48% / 0.35);
+}
+
+/* Status badge colours */
+.status-lc   { @apply bg-green-900/50 text-green-300 border border-green-700/40; }
+.status-nt   { @apply bg-lime-900/50 text-lime-300 border border-lime-700/40; }
+.status-vu   { @apply bg-yellow-900/50 text-yellow-300 border border-yellow-700/40; }
+.status-en   { @apply bg-orange-900/50 text-orange-300 border border-orange-700/40; }
+.status-cr   { @apply bg-red-900/50 text-red-300 border border-red-700/40; }
+.status-dd   { @apply bg-slate-800/80 text-slate-300 border border-slate-600/40; }
+.status-ne   { @apply bg-slate-800/80 text-slate-400 border border-slate-600/40; }
+
+/* Wave animation for the hero */
+@keyframes wave {
+  0%, 100% { transform: translateX(0) scaleY(1); }
+  50%       { transform: translateX(-8px) scaleY(0.96); }
+}
+
+.wave-anim {
+  animation: wave 8s ease-in-out infinite;
+}
+
+/* Fade-in utility */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.fade-in {
+  animation: fadeIn 0.35s ease forwards;
+}

@@ -1,0 +1,28 @@
+# =============================================================================
+# Namespace / OpenShift Project
+# =============================================================================
+# In OpenShift, a Namespace and a Project are the same object viewed
+# from different APIs. This manifest works with both kubectl and oc.
+#
+# Apply:
+#   kubectl apply -f namespace.yaml
+#   # OR for OpenShift:
+#   oc new-project shark-db
+#
+# NOTE: When using ArgoCD, the namespace is typically created by ArgoCD's
+# Application resource (spec.destination.namespace + syncPolicy.syncOptions
+# CreateNamespace=true). You can omit this file if ArgoCD manages it.
+# =============================================================================
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: shark-db
+  labels:
+    app.kubernetes.io/name: shark-db
+    app.kubernetes.io/part-of: shark-database
+    # OpenShift uses this label to restrict which namespaces ArgoCD can manage
+    argocd.argoproj.io/managed-by: argocd
+  annotations:
+    # Optional: description visible in OpenShift console
+    openshift.io/description: "Shark Database — GitOps Demo Application"
+    openshift.io/display-name: "Shark DB"

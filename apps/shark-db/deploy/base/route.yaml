@@ -1,0 +1,48 @@
+# =============================================================================
+# Route — OpenShift-specific external access
+# =============================================================================
+# OpenShift Routes are the native way to expose Services externally.
+# They are created and managed by the OpenShift Router (HAProxy-based).
+#
+# TLS termination: edge (TLS terminates at the router, HTTP inside cluster)
+# This is the most common and simplest approach for demos.
+#
+# Alternative termination modes:
+#   - passthrough: TLS goes all the way to the pod (need TLS certs in app)
+#   - reencrypt: TLS at router AND re-encrypted to pod (most secure)
+#
+# For vanilla Kubernetes (no OpenShift), see ingress.yaml instead.
+#
+# Apply:
+#   oc apply -f route.yaml
+#   # URL will be: https://shark-db-shark-db.apps.<cluster-domain>
+# =============================================================================
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: shark-db
+  namespace: shark-db
+  labels:
+    app.kubernetes.io/name: shark-db
+    app.kubernetes.io/part-of: shark-database
+  annotations:
+    # Haproxy timeout for long-running connections
+    haproxy.router.openshift.io/timeout: "60s"
+    # Enable HTTP/2
+    haproxy.router.openshift.io/h2-push-mode: "disabled"
+spec:
+  # host is optional — OpenShift auto-generates:
+  # shark-db-shark-db.apps.<cluster-ingress-domain>
+  # Uncomment to set a custom hostname:
+  # host: shark-db.apps.your-cluster.example.com
+
+  to:
+    kind: Service
+    name: shark-db
+    weight: 100
+  port:
+    targetPort: http
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect   # HTTP → HTTPS redirect
+  wildcardPolicy: None
