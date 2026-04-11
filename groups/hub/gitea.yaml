@@ -11,8 +11,8 @@ metadata:
 spec:
   project: cluster-config
   source:
-    repoURL: "https://github.com/REPLACE_ME/OCP-Cluster-config.git"
-    targetRevision: HEAD
+    repoURL: "git@github.com:atwin140/OCP-Cluster-config.git"
+    targetRevision: main
     path: components/gitea/overlays/west
     kustomize:
       buildOptions: "--enable-helm"
