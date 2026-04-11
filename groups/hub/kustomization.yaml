@@ -6,3 +6,4 @@ resources:
 # - cert-manager.yaml
 # - acm-argocd-integration.yaml
 - acs.yaml
+- gitea.yaml
