@@ -15,3 +15,4 @@ resources:
 - keycloak.yaml
 - keycloak-route.yaml
 - keycloak-realm-openshift.yaml
+- postgresql-backup.yaml
