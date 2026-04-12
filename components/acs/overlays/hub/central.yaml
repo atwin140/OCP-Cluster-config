@@ -15,7 +15,7 @@ spec:
       persistence:
         persistentVolumeClaim:
           claimName: central-db
-          storageClassName: synology-iscsi-ext4
+          storageClassName: synology-nfs-storage
   egress:
     connectivityPolicy: Online
   scanner:
@@ -31,5 +31,5 @@ spec:
       persistence:
         persistentVolumeClaim:
           claimName: scanner-v4-db
-          storageClassName: synology-iscsi-ext4
+          storageClassName: synology-nfs-storage
     scannerComponent: Default
