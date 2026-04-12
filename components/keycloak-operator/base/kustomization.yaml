@@ -8,6 +8,7 @@ resources:
 - operatorgroup.yaml
 - argocd-keycloak-role.yaml
 - argocd-keycloak-rolebinding.yaml
+- argocd-keycloak-clusterrole.yaml
 - subscription.yaml
 
 commonLabels:

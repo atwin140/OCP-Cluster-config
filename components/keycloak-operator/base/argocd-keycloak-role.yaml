@@ -41,6 +41,7 @@ rules:
   resources:
   - services
   - secrets
+  - serviceaccounts
   - persistentvolumeclaims
   verbs:
   - get
