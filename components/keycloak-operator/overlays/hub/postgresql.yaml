@@ -40,6 +40,9 @@ spec:
         app.kubernetes.io/name: keycloak-postgresql
         app.kubernetes.io/component: database
     spec:
+      securityContext:
+        fsGroup: 26
+        runAsUser: 26
       containers:
       - name: postgresql
         # Red Hat RHEL9 PostgreSQL 15 image — supports arbitrary UID (OCP SCC compliant)
