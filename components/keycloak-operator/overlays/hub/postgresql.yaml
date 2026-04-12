@@ -91,7 +91,7 @@ spec:
     spec:
       accessModes:
       - ReadWriteOnce
-      storageClassName: synology-iscsi-ext4
+      storageClassName: nfs-storage-pro
       resources:
         requests:
           storage: 5Gi
