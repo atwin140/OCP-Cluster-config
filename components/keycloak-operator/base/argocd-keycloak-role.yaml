@@ -24,6 +24,33 @@ rules:
   - patch
   - delete
 - apiGroups:
+  - apps
+  resources:
+  - statefulsets
+  - statefulsets/status
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - ""
+  resources:
+  - services
+  - secrets
+  - persistentvolumeclaims
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+- apiGroups:
   - route.openshift.io
   resources:
   - routes
