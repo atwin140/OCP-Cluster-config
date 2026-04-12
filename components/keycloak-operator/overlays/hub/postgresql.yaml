@@ -41,8 +41,6 @@ spec:
         app.kubernetes.io/component: database
     spec:
       securityContext:
-        fsGroup: 26
-        runAsUser: 26
         runAsNonRoot: true
         seccompProfile:
           type: RuntimeDefault
