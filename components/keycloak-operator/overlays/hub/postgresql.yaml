@@ -91,7 +91,7 @@ spec:
     spec:
       accessModes:
       - ReadWriteOnce
-      storageClassName: nfs-storage-pro
+      storageClassName: synology-nfs-storage-pro
       resources:
         requests:
           storage: 5Gi
