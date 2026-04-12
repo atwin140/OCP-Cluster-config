@@ -7,6 +7,7 @@ resources:
 - 00-namespace.yaml
 - 10-controller.yaml
 - 20-scc.yaml
+- argocd-rbac.yaml
 
 commonLabels:
   app.kubernetes.io/part-of: sealed-secrets

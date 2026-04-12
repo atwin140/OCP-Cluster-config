@@ -1,12 +1,12 @@
 apiVersion: storage.k8s.io/v1
 kind: StorageClass
 metadata:
-  name: synology-iscsi-ext4-vol2
+  name: nas-iscsi-ext4-vol2
 provisioner: csi.san.synology.com
 parameters:
   fsType: ext4
   # dsm: IP of your Synology DSM — pulled from iSCSI target in mount error
-  dsm: "10.0.0.2"
+  dsm: "10.0.0.3"
   # location: volume path on the DSM — adjust to match your pool (e.g. /volume1, /volume2)
   location: "/volume2"
 reclaimPolicy: Retain
