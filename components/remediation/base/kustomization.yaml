@@ -11,10 +11,13 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
 resources:
-- remediations/ocp4-cis-ingress-controller-tls-cipher-suites.yaml
 - remediations/ocp4-cis-ocp-allowed-registries.yaml
 - remediations/ocp4-cis-scc-limit-container-allowed-capabilities.yaml
 - remediations/ocp4-cis-configure-network-policies-namespaces.yaml
+
+patches:
+- path: remediations/ocp4-cis-ingress-controller-tls-cipher-suites.yaml
+- path: remediations/ingress-aws-patch.yaml
 
 commonLabels:
   app.kubernetes.io/part-of: compliance-remediation
