@@ -6,7 +6,7 @@ resources:
 - ocp-oauth.yaml
 - acs.yaml
 - cert-manager.yaml
-# - compliance-operator.yaml
+- compliance-operator.yaml
 - observability.yaml
 - sealed-secrets.yaml
 
