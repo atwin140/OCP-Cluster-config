@@ -63,6 +63,10 @@ kubeseal \
   < clustertest-cluster-registration-secret.yaml > clustertest-cluster-registration-secret-sealed.yaml
 ```
 
+```
+oc apply -f clusterReg-cluster-registration-secret.yaml -n stackrox --dry-run=client -o yaml | kubeseal --format yaml --cert sealed-secrets-cert.pem  > clustertest-cluster-registration-secret-sealed.yaml 
+```
+
 Create and seal in one command
 ```
 oc create secret generic my-secret \
