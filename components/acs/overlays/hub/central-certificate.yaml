@@ -1,0 +1,14 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: central-tls
+  namespace: stackrox
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  dnsNames:
+  - central-stackrox.apps.acm.sharkbait.tech
+  issuerRef:
+    kind: ClusterIssuer
+    name: letsencrypt-prod
+  secretName: central-tls

@@ -7,6 +7,7 @@ commonAnnotations:
 
 resources:
 - acs-declarative-auth.yaml
+- central-certificate.yaml
 - central.yaml
 
 patches:
