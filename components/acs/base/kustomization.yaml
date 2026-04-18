@@ -11,8 +11,8 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
 resources:
-# - namespace.yaml
-# - stackrox-namespace.yaml
+- namespace.yaml
+- stackrox-namespace.yaml
 - operatorgroup.yaml
 - argocd-acs-role.yaml
 - argocd-acs-rolebinding.yaml
