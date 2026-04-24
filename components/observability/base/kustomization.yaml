@@ -7,6 +7,8 @@ kind: Kustomization
 resources:
 - cluster-monitoring-config.yaml
 - user-workload-monitoring-config.yaml
+- namespace.yaml
+- monitorinstack.yaml
 
 commonLabels:
   app.kubernetes.io/part-of: observability

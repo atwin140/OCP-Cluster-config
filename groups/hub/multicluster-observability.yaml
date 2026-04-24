@@ -1,0 +1,27 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: multicluster-observability
+  namespace: openshift-gitops
+  labels:
+    app.kubernetes.io/part-of: cluster-onboarding
+    component: multicluster-observability
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  project: cluster-config
+  source:
+    repoURL: "git@github.com:atwin140/OCP-Cluster-config.git"
+    targetRevision: main
+    path: components/multicluster-observability/overlays/hub
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: open-cluster-management-observability
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+    - CreateNamespace=true
+    - ServerSideApply=true
+  revisionHistoryLimit: 10

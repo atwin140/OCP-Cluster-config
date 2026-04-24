@@ -1,0 +1,25 @@
+apiVersion: monitoring.rhobs/v1alpha1
+kind: MonitoringStack
+metadata:
+  name: acm-monitoring-stack
+  namespace: coo-namespace
+spec:
+  alertmanagerConfig:
+    disabled: false
+  logLevel: debug
+  namespaceSelector:
+    matchLabels:
+      monitoring.rhobs: coo-stack
+  prometheusConfig:
+    replicas: 2
+  resourceSelector:
+    matchLabels:
+      k8s-app: prometheus-coo-acm-monitor
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 256Mi
+  retention: 16d
