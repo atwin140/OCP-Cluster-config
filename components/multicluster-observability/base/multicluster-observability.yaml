@@ -5,7 +5,11 @@ metadata:
   annotations:
     argocd.argoproj.io/sync-wave: "2"
 spec:
-  observabilityAddonSpec: {}
+  observabilityAddonSpec:
+    enableMetrics: true
+    interval: 300
+    workers: 1
+    scrapeSizeLimitBytes: 1073741824
   storageConfig:
     storageClass: nas-iscsi-ext4-vol2
     metricObjectStorage:
