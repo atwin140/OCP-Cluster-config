@@ -18,11 +18,11 @@ patches:
     kind: Application
 
 # Uncomment this patch block to disable Argo CD auto-sync again.
-- path: patch-disable-autosync.yaml
-  target:
-    group: argoproj.io
-    version: v1alpha1
-    kind: Application
+# - path: patch-disable-autosync.yaml
+#   target:
+#     group: argoproj.io
+#     version: v1alpha1
+#     kind: Application
 
 - path: patch-cert-manager-source.yaml
   target:
@@ -30,3 +30,10 @@ patches:
     version: v1alpha1
     kind: Application
     name: cert-manager
+
+- path: patch-observability-source.yaml
+  target:
+    group: argoproj.io
+    version: v1alpha1
+    kind: Application
+    name: observability

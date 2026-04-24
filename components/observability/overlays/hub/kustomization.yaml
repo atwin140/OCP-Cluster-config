@@ -1,0 +1,10 @@
+# Hub cluster observability overlay.
+# Uses base monitoring settings without lab-specific overrides.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+commonAnnotations:
+  cluster.name: hub
+
+resources:
+- ../../base
