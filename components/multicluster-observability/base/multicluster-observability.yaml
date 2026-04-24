@@ -7,6 +7,7 @@ metadata:
 spec:
   observabilityAddonSpec: {}
   storageConfig:
+    storageClass: nas-iscsi-ext4-vol2
     metricObjectStorage:
       key: thanos.yaml
       name: thanos-object-storage
