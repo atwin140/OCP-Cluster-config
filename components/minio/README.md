@@ -18,7 +18,11 @@ This component deploys MinIO on the hub cluster and configures the `thanos-objec
 - Bucket: `observability-thanos`
 - Internal endpoint: `minio.open-cluster-management-observability.svc.cluster.local:9000`
 - Hub storage class: `synology-nfs-storage-pro`
+- Images: `quay.io/minio/minio:latest` and `quay.io/minio/mc:latest`
 
 ## Required follow-up
 
-Replace the placeholder credentials in `base/minio-credentials-secret.yaml` and `base/thanos-object-storage-secret.yaml` before production use.
+Replace the placeholder credentials before production use and regenerate:
+
+- `base/minio-credentials-sealed.yaml`
+- `base/thanos-object-storage-sealed.yaml`
