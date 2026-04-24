@@ -3,6 +3,7 @@ kind: Kustomization
 
 resources:
 - namespace.yaml
+- argocd-rbac.yaml
 - minio-credentials-sealed.yaml
 - thanos-object-storage-sealed.yaml
 - minio-pvc.yaml
