@@ -3,6 +3,8 @@ kind: Kustomization
 
 resources:
 - namespace.yaml
+- minio-serviceaccount.yaml
+- minio-anyuid.yaml
 - minio-credentials-sealed.yaml
 - thanos-object-storage-sealed.yaml
 - minio-pvc.yaml
