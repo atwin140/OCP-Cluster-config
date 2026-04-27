@@ -26,7 +26,7 @@ spec:
           kind: PrometheusLabelValuesVariable
           spec:
             datasource:
-              kind: PersesDatasource
+              kind: PrometheusDatasource
               name: acm-thanos-querier-datasource
             labelName: cluster
             matchers:
@@ -154,7 +154,7 @@ spec:
                 kind: PrometheusTimeSeriesQuery
                 spec:
                   datasource:
-                    kind: PersesDatasource
+                    kind: PrometheusDatasource
                     name: acm-thanos-querier-datasource
                   query: >-
                     sum(rate(apiserver_request_total{cluster="$cluster",code=~"5.."}[5m]))
@@ -177,7 +177,7 @@ spec:
                 kind: PrometheusTimeSeriesQuery
                 spec:
                   datasource:
-                    kind: PersesDatasource
+                    kind: PrometheusDatasource
                     name: acm-thanos-querier-datasource
                   query: >-
                     sum(rate(apiserver_request_total{cluster="$cluster"}[5m]))
@@ -208,7 +208,7 @@ spec:
                 kind: PrometheusTimeSeriesQuery
                 spec:
                   datasource:
-                    kind: PersesDatasource
+                    kind: PrometheusDatasource
                     name: acm-thanos-querier-datasource
                   query: >-
                     histogram_quantile(0.99, sum(rate(apiserver_request_duration_seconds_bucket{cluster="$cluster",verb!~"WATCH|CONNECT"}[5m])) by (le))
@@ -237,7 +237,7 @@ spec:
                 kind: PrometheusTimeSeriesQuery
                 spec:
                   datasource:
-                    kind: PersesDatasource
+                    kind: PrometheusDatasource
                     name: acm-thanos-querier-datasource
                   query: >-
                     count(up{job="apiserver",cluster="$cluster"} == 1) or vector(0)
@@ -267,7 +267,7 @@ spec:
                 kind: PrometheusTimeSeriesQuery
                 spec:
                   datasource:
-                    kind: PersesDatasource
+                    kind: PrometheusDatasource
                     name: acm-thanos-querier-datasource
                   query: >-
                     sum by (verb) (rate(apiserver_request_total{cluster="$cluster"}[5m]))
@@ -297,7 +297,7 @@ spec:
                 kind: PrometheusTimeSeriesQuery
                 spec:
                   datasource:
-                    kind: PersesDatasource
+                    kind: PrometheusDatasource
                     name: acm-thanos-querier-datasource
                   query: >-
                     histogram_quantile(0.99,
@@ -329,7 +329,7 @@ spec:
                 kind: PrometheusTimeSeriesQuery
                 spec:
                   datasource:
-                    kind: PersesDatasource
+                    kind: PrometheusDatasource
                     name: acm-thanos-querier-datasource
                   query: >-
                     sum by (code) (rate(apiserver_request_total{cluster="$cluster",code=~"[45].."}[5m]))
@@ -362,7 +362,7 @@ spec:
                 kind: PrometheusTimeSeriesQuery
                 spec:
                   datasource:
-                    kind: PersesDatasource
+                    kind: PrometheusDatasource
                     name: acm-thanos-querier-datasource
                   query: >-
                     increase(etcd_server_leader_changes_seen_total{cluster="$cluster"}[1h])
@@ -393,7 +393,7 @@ spec:
                 kind: PrometheusTimeSeriesQuery
                 spec:
                   datasource:
-                    kind: PersesDatasource
+                    kind: PrometheusDatasource
                     name: acm-thanos-querier-datasource
                   query: >-
                     max(etcd_mvcc_db_total_size_in_bytes{cluster="$cluster"})
@@ -422,7 +422,7 @@ spec:
                 kind: PrometheusTimeSeriesQuery
                 spec:
                   datasource:
-                    kind: PersesDatasource
+                    kind: PrometheusDatasource
                     name: acm-thanos-querier-datasource
                   query: >-
                     increase(etcd_server_proposals_failed_total{cluster="$cluster"}[5m])
@@ -451,7 +451,7 @@ spec:
                 kind: PrometheusTimeSeriesQuery
                 spec:
                   datasource:
-                    kind: PersesDatasource
+                    kind: PrometheusDatasource
                     name: acm-thanos-querier-datasource
                   query: >-
                     sum(increase(grpc_server_handled_total{cluster="$cluster",grpc_code!="OK"}[5m])) or vector(0)
@@ -481,7 +481,7 @@ spec:
                 kind: PrometheusTimeSeriesQuery
                 spec:
                   datasource:
-                    kind: PersesDatasource
+                    kind: PrometheusDatasource
                     name: acm-thanos-querier-datasource
                   query: >-
                     etcd_mvcc_db_total_size_in_bytes{cluster="$cluster"}
@@ -511,7 +511,7 @@ spec:
                 kind: PrometheusTimeSeriesQuery
                 spec:
                   datasource:
-                    kind: PersesDatasource
+                    kind: PrometheusDatasource
                     name: acm-thanos-querier-datasource
                   query: >-
                     histogram_quantile(0.99,
@@ -543,7 +543,7 @@ spec:
                 kind: PrometheusTimeSeriesQuery
                 spec:
                   datasource:
-                    kind: PersesDatasource
+                    kind: PrometheusDatasource
                     name: acm-thanos-querier-datasource
                   query: >-
                     sum by (grpc_method) (rate(grpc_server_handled_total{cluster="$cluster"}[5m]))

@@ -4,6 +4,7 @@ kind: Kustomization
 resources:
 - multicluster-observability.yaml
 - mco-addon.yaml
+- datasource.yml
 - perses-dashboards/acm-multicluster-fleet-overview.yaml
 - perses-dashboards/acm-multicluster-workload-health.yaml
 - perses-dashboards/acm-multicluster-control-plane-etcd.yaml

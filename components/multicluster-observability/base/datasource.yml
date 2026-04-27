@@ -1,0 +1,23 @@
+apiVersion: perses.dev/v1alpha2
+kind: PersesDatasource
+metadata:
+  name: acm-thanos-querier-datasource
+  namespace: openshift-cluster-observability-operator
+spec:
+  client:
+    tls:
+      enable: true
+      insecureSkipVerify: true
+    bearerToken:
+      name: perses-sa-token
+      namespace: openshift-cluster-observability-operator
+      type: secret
+      tokenPath: token
+  config:
+    default: false
+    display:
+      name: ACM Multi-Cluster Thanos
+    plugin:
+      kind: PrometheusDatasource
+      spec:
+        directUrl: https://rbac-query-proxy.open-cluster-management-observability.svc.cluster.local:8443
