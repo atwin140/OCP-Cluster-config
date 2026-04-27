@@ -1,0 +1,451 @@
+apiVersion: perses.dev/v1alpha2
+kind: PersesDashboard
+metadata:
+  name: acm-multicluster-workload-health
+  namespace: openshift-cluster-observability-operator
+  labels:
+    app.kubernetes.io/part-of: multicluster-observability
+    app.kubernetes.io/managed-by: argocd
+spec:
+  config:
+    display:
+      name: "ACM Multi-Cluster Workload Health"
+    duration: 1h
+    # -- Variables ----------------------------------------------------------------
+    variables:
+    - kind: ListVariable
+      spec:
+        name: cluster
+        display:
+          name: Cluster
+          hidden: false
+        allowAllValue: true
+        allowMultiple: true
+        sort: alphabetical-asc
+        plugin:
+          kind: PrometheusLabelValuesVariable
+          spec:
+            datasource:
+              kind: PersesDatasource
+              name: acm-thanos-querier-datasource
+            labelName: cluster
+            matchers:
+            - up{job="kubelet", metrics_path="/metrics/cadvisor"}
+    - kind: ListVariable
+      spec:
+        name: namespace
+        display:
+          name: Namespace
+          hidden: false
+        allowAllValue: true
+        allowMultiple: false
+        sort: alphabetical-asc
+        plugin:
+          kind: PrometheusLabelValuesVariable
+          spec:
+            datasource:
+              kind: PersesDatasource
+              name: acm-thanos-querier-datasource
+            labelName: namespace
+            matchers:
+            - kube_namespace_labels{cluster=~"$cluster"}
+    # -- Layouts ------------------------------------------------------------------
+    layouts:
+    - kind: Grid
+      spec:
+        display:
+          title: Deployment Health
+        items:
+        - content:
+            $ref: '#/spec/panels/deploy_total'
+          height: 4
+          width: 8
+          x: 0
+          "y": 0
+        - content:
+            $ref: '#/spec/panels/deploy_available'
+          height: 4
+          width: 8
+          x: 8
+          "y": 0
+        - content:
+            $ref: '#/spec/panels/deploy_degraded'
+          height: 4
+          width: 8
+          x: 16
+          "y": 0
+        - content:
+            $ref: '#/spec/panels/deploy_replicas_table'
+          height: 10
+          width: 24
+          x: 0
+          "y": 4
+    - kind: Grid
+      spec:
+        display:
+          title: Pod Status
+        items:
+        - content:
+            $ref: '#/spec/panels/pods_running_stat'
+          height: 4
+          width: 6
+          x: 0
+          "y": 0
+        - content:
+            $ref: '#/spec/panels/pods_pending_stat'
+          height: 4
+          width: 6
+          x: 6
+          "y": 0
+        - content:
+            $ref: '#/spec/panels/pods_crashloop_stat'
+          height: 4
+          width: 6
+          x: 12
+          "y": 0
+        - content:
+            $ref: '#/spec/panels/pods_oom_stat'
+          height: 4
+          width: 6
+          x: 18
+          "y": 0
+        - content:
+            $ref: '#/spec/panels/pod_phase_by_cluster'
+          height: 8
+          width: 24
+          x: 0
+          "y": 4
+    - kind: Grid
+      spec:
+        display:
+          title: Container Restarts
+        items:
+        - content:
+            $ref: '#/spec/panels/container_restarts_timeseries'
+          height: 8
+          width: 24
+          x: 0
+          "y": 0
+    # -- Panels -------------------------------------------------------------------
+    panels:
+      # Deployment stats
+      deploy_total:
+        kind: Panel
+        spec:
+          display:
+            name: Total Deployments
+          plugin:
+            kind: StatChart
+            spec:
+              calculation: last-number
+              format:
+                unit: decimal
+          queries:
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  datasource:
+                    kind: PersesDatasource
+                    name: acm-thanos-querier-datasource
+                  query: >-
+                    count(kube_deployment_labels{cluster=~"$cluster",namespace=~"$namespace"})
+
+      deploy_available:
+        kind: Panel
+        spec:
+          display:
+            name: Deployments Fully Available
+          plugin:
+            kind: StatChart
+            spec:
+              calculation: last-number
+              format:
+                unit: decimal
+              thresholds:
+                steps:
+                - color: green
+                  value: 0
+          queries:
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  datasource:
+                    kind: PersesDatasource
+                    name: acm-thanos-querier-datasource
+                  query: >-
+                    count(kube_deployment_status_condition{condition="Available",status="true",cluster=~"$cluster",namespace=~"$namespace"})
+
+      deploy_degraded:
+        kind: Panel
+        spec:
+          display:
+            name: Deployments Degraded
+          plugin:
+            kind: StatChart
+            spec:
+              calculation: last-number
+              format:
+                unit: decimal
+              thresholds:
+                steps:
+                - color: green
+                  value: 0
+                - color: red
+                  value: 1
+          queries:
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  datasource:
+                    kind: PersesDatasource
+                    name: acm-thanos-querier-datasource
+                  query: >-
+                    count(kube_deployment_status_replicas_unavailable{cluster=~"$cluster",namespace=~"$namespace"} > 0) or vector(0)
+
+      # Deployment table: name, available, unavailable, ready
+      deploy_replicas_table:
+        kind: Panel
+        spec:
+          display:
+            name: Deployments — Replica Status
+          plugin:
+            kind: Table
+            spec:
+              columnSettings:
+              - enableSorting: true
+                header: Cluster
+                name: cluster
+              - enableSorting: true
+                header: Namespace
+                name: namespace
+              - enableSorting: true
+                header: Deployment
+                name: deployment
+              - enableSorting: true
+                header: Desired
+                name: 'value #desired'
+              - enableSorting: true
+                header: Available
+                name: 'value #available'
+              - enableSorting: true
+                header: Unavailable
+                name: 'value #unavailable'
+              transforms:
+              - kind: MergeSeries
+                spec: {}
+          queries:
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  datasource:
+                    kind: PersesDatasource
+                    name: acm-thanos-querier-datasource
+                  query: >-
+                    kube_deployment_spec_replicas{cluster=~"$cluster",namespace=~"$namespace"}
+                  seriesNameFormat: desired
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  datasource:
+                    kind: PersesDatasource
+                    name: acm-thanos-querier-datasource
+                  query: >-
+                    kube_deployment_status_replicas_available{cluster=~"$cluster",namespace=~"$namespace"}
+                  seriesNameFormat: available
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  datasource:
+                    kind: PersesDatasource
+                    name: acm-thanos-querier-datasource
+                  query: >-
+                    kube_deployment_status_replicas_unavailable{cluster=~"$cluster",namespace=~"$namespace"}
+                  seriesNameFormat: unavailable
+
+      # Pod status stats
+      pods_running_stat:
+        kind: Panel
+        spec:
+          display:
+            name: Running Pods
+          plugin:
+            kind: StatChart
+            spec:
+              calculation: last-number
+              format:
+                unit: decimal
+              thresholds:
+                steps:
+                - color: green
+                  value: 0
+          queries:
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  datasource:
+                    kind: PersesDatasource
+                    name: acm-thanos-querier-datasource
+                  query: >-
+                    sum(kube_pod_status_phase{phase="Running",cluster=~"$cluster",namespace=~"$namespace"})
+
+      pods_pending_stat:
+        kind: Panel
+        spec:
+          display:
+            name: Pending Pods
+          plugin:
+            kind: StatChart
+            spec:
+              calculation: last-number
+              format:
+                unit: decimal
+              thresholds:
+                steps:
+                - color: green
+                  value: 0
+                - color: yellow
+                  value: 1
+          queries:
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  datasource:
+                    kind: PersesDatasource
+                    name: acm-thanos-querier-datasource
+                  query: >-
+                    sum(kube_pod_status_phase{phase="Pending",cluster=~"$cluster",namespace=~"$namespace"})
+
+      pods_crashloop_stat:
+        kind: Panel
+        spec:
+          display:
+            name: CrashLoopBackOff Pods
+          plugin:
+            kind: StatChart
+            spec:
+              calculation: last-number
+              format:
+                unit: decimal
+              thresholds:
+                steps:
+                - color: green
+                  value: 0
+                - color: red
+                  value: 1
+          queries:
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  datasource:
+                    kind: PersesDatasource
+                    name: acm-thanos-querier-datasource
+                  query: >-
+                    count(kube_pod_container_status_waiting_reason{reason="CrashLoopBackOff",cluster=~"$cluster",namespace=~"$namespace"} == 1) or vector(0)
+
+      pods_oom_stat:
+        kind: Panel
+        spec:
+          display:
+            name: OOMKilled (last 1h)
+          plugin:
+            kind: StatChart
+            spec:
+              calculation: last-number
+              format:
+                unit: decimal
+              thresholds:
+                steps:
+                - color: green
+                  value: 0
+                - color: red
+                  value: 1
+          queries:
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  datasource:
+                    kind: PersesDatasource
+                    name: acm-thanos-querier-datasource
+                  query: >-
+                    count(kube_pod_container_status_last_terminated_reason{reason="OOMKilled",cluster=~"$cluster",namespace=~"$namespace"} == 1) or vector(0)
+
+      pod_phase_by_cluster:
+        kind: Panel
+        spec:
+          display:
+            name: Pod Phase by Cluster Over Time
+          plugin:
+            kind: TimeSeriesChart
+            spec:
+              legend:
+                mode: list
+                position: bottom
+              visual:
+                display: line
+                lineWidth: 1.5
+              yAxis:
+                format:
+                  unit: decimal
+          queries:
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  datasource:
+                    kind: PersesDatasource
+                    name: acm-thanos-querier-datasource
+                  query: >-
+                    sum by (cluster, phase) (kube_pod_status_phase{cluster=~"$cluster",namespace=~"$namespace"})
+                  seriesNameFormat: '{{cluster}} — {{phase}}'
+
+      # Container restarts
+      container_restarts_timeseries:
+        kind: Panel
+        spec:
+          display:
+            name: Container Restarts per Cluster (rate 5m)
+          plugin:
+            kind: TimeSeriesChart
+            spec:
+              legend:
+                mode: list
+                position: bottom
+              visual:
+                display: line
+                lineWidth: 1.5
+              yAxis:
+                format:
+                  unit: "counts/sec"
+          queries:
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  datasource:
+                    kind: PersesDatasource
+                    name: acm-thanos-querier-datasource
+                  query: >-
+                    sum by (cluster) (rate(kube_pod_container_status_restarts_total{cluster=~"$cluster",namespace=~"$namespace"}[5m]))
+                  seriesNameFormat: '{{cluster}}'

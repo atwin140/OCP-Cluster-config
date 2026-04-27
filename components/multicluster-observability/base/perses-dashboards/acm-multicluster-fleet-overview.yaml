@@ -1,0 +1,384 @@
+apiVersion: perses.dev/v1alpha2
+kind: PersesDashboard
+metadata:
+  name: acm-multicluster-fleet-overview
+  namespace: openshift-cluster-observability-operator
+  labels:
+    app.kubernetes.io/part-of: multicluster-observability
+    app.kubernetes.io/managed-by: argocd
+spec:
+  config:
+    display:
+      name: "ACM Multi-Cluster Fleet Overview"
+    duration: 1h
+    # -- Variables ----------------------------------------------------------------
+    variables:
+    - kind: ListVariable
+      spec:
+        name: cluster
+        display:
+          name: Cluster
+          hidden: false
+        allowAllValue: true
+        allowMultiple: true
+        sort: alphabetical-asc
+        plugin:
+          kind: PrometheusLabelValuesVariable
+          spec:
+            datasource:
+              kind: PersesDatasource
+              name: acm-thanos-querier-datasource
+            labelName: cluster
+            matchers:
+            - up{job="kubelet", metrics_path="/metrics/cadvisor"}
+    # -- Layouts ------------------------------------------------------------------
+    layouts:
+    - kind: Grid
+      spec:
+        display:
+          title: Fleet Summary
+        items:
+        - content:
+            $ref: '#/spec/panels/fleet_active_clusters'
+          height: 4
+          width: 6
+          x: 0
+          "y": 0
+        - content:
+            $ref: '#/spec/panels/fleet_total_nodes'
+          height: 4
+          width: 6
+          x: 6
+          "y": 0
+        - content:
+            $ref: '#/spec/panels/fleet_cpu_cores'
+          height: 4
+          width: 6
+          x: 12
+          "y": 0
+        - content:
+            $ref: '#/spec/panels/fleet_memory_bytes'
+          height: 4
+          width: 6
+          x: 18
+          "y": 0
+    - kind: Grid
+      spec:
+        display:
+          title: Resource Utilization by Cluster
+        items:
+        - content:
+            $ref: '#/spec/panels/cpu_usage_by_cluster'
+          height: 8
+          width: 12
+          x: 0
+          "y": 0
+        - content:
+            $ref: '#/spec/panels/memory_usage_by_cluster'
+          height: 8
+          width: 12
+          x: 12
+          "y": 0
+    - kind: Grid
+      spec:
+        display:
+          title: Pod Health
+        items:
+        - content:
+            $ref: '#/spec/panels/pods_running'
+          height: 4
+          width: 6
+          x: 0
+          "y": 0
+        - content:
+            $ref: '#/spec/panels/pods_failed'
+          height: 4
+          width: 6
+          x: 6
+          "y": 0
+        - content:
+            $ref: '#/spec/panels/pods_pending'
+          height: 4
+          width: 6
+          x: 12
+          "y": 0
+        - content:
+            $ref: '#/spec/panels/pod_phase_timeseries'
+          height: 8
+          width: 24
+          x: 0
+          "y": 4
+    # -- Panels -------------------------------------------------------------------
+    panels:
+      # Fleet summary stats
+      fleet_active_clusters:
+        kind: Panel
+        spec:
+          display:
+            name: Active Managed Clusters
+          plugin:
+            kind: StatChart
+            spec:
+              calculation: last-number
+              format:
+                unit: decimal
+              thresholds:
+                steps:
+                - color: green
+                  value: 0
+          queries:
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  datasource:
+                    kind: PersesDatasource
+                    name: acm-thanos-querier-datasource
+                  query: count(acm_managed_cluster_info{available="True"})
+
+      fleet_total_nodes:
+        kind: Panel
+        spec:
+          display:
+            name: Total Nodes (Ready)
+          plugin:
+            kind: StatChart
+            spec:
+              calculation: last-number
+              format:
+                unit: decimal
+          queries:
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  datasource:
+                    kind: PersesDatasource
+                    name: acm-thanos-querier-datasource
+                  query: >-
+                    count(kube_node_status_condition{condition="Ready",status="true",cluster=~"$cluster"})
+
+      fleet_cpu_cores:
+        kind: Panel
+        spec:
+          display:
+            name: Total CPU Cores
+          plugin:
+            kind: StatChart
+            spec:
+              calculation: last-number
+              format:
+                unit: decimal
+          queries:
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  datasource:
+                    kind: PersesDatasource
+                    name: acm-thanos-querier-datasource
+                  query: >-
+                    sum(cluster:machine_cpu_cores:sum{cluster=~"$cluster"})
+
+      fleet_memory_bytes:
+        kind: Panel
+        spec:
+          display:
+            name: Total Memory Capacity
+          plugin:
+            kind: StatChart
+            spec:
+              calculation: last-number
+              format:
+                unit: bytes
+          queries:
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  datasource:
+                    kind: PersesDatasource
+                    name: acm-thanos-querier-datasource
+                  query: >-
+                    sum(cluster:machine_memory_bytes:sum{cluster=~"$cluster"})
+
+      # Resource utilization time series
+      cpu_usage_by_cluster:
+        kind: Panel
+        spec:
+          display:
+            name: CPU Usage by Cluster (cores)
+          plugin:
+            kind: TimeSeriesChart
+            spec:
+              legend:
+                mode: list
+                position: bottom
+              visual:
+                display: line
+                lineWidth: 1.5
+              yAxis:
+                format:
+                  unit: decimal
+          queries:
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  datasource:
+                    kind: PersesDatasource
+                    name: acm-thanos-querier-datasource
+                  query: >-
+                    cluster:cpu_usage_cores:sum{cluster=~"$cluster"}
+                  seriesNameFormat: '{{cluster}}'
+
+      memory_usage_by_cluster:
+        kind: Panel
+        spec:
+          display:
+            name: Memory Usage by Cluster
+          plugin:
+            kind: TimeSeriesChart
+            spec:
+              legend:
+                mode: list
+                position: bottom
+              visual:
+                display: line
+                lineWidth: 1.5
+              yAxis:
+                format:
+                  unit: bytes
+          queries:
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  datasource:
+                    kind: PersesDatasource
+                    name: acm-thanos-querier-datasource
+                  query: >-
+                    cluster:memory_usage:sum{cluster=~"$cluster"}
+                  seriesNameFormat: '{{cluster}}'
+
+      # Pod health stats
+      pods_running:
+        kind: Panel
+        spec:
+          display:
+            name: Running Pods
+          plugin:
+            kind: StatChart
+            spec:
+              calculation: last-number
+              format:
+                unit: decimal
+              thresholds:
+                steps:
+                - color: green
+                  value: 0
+          queries:
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  datasource:
+                    kind: PersesDatasource
+                    name: acm-thanos-querier-datasource
+                  query: >-
+                    sum(kube_pod_status_phase{phase="Running",cluster=~"$cluster"})
+
+      pods_failed:
+        kind: Panel
+        spec:
+          display:
+            name: Failed Pods
+          plugin:
+            kind: StatChart
+            spec:
+              calculation: last-number
+              format:
+                unit: decimal
+              thresholds:
+                steps:
+                - color: green
+                  value: 0
+                - color: red
+                  value: 1
+          queries:
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  datasource:
+                    kind: PersesDatasource
+                    name: acm-thanos-querier-datasource
+                  query: >-
+                    sum(kube_pod_status_phase{phase="Failed",cluster=~"$cluster"})
+
+      pods_pending:
+        kind: Panel
+        spec:
+          display:
+            name: Pending Pods
+          plugin:
+            kind: StatChart
+            spec:
+              calculation: last-number
+              format:
+                unit: decimal
+              thresholds:
+                steps:
+                - color: green
+                  value: 0
+                - color: yellow
+                  value: 1
+          queries:
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  datasource:
+                    kind: PersesDatasource
+                    name: acm-thanos-querier-datasource
+                  query: >-
+                    sum(kube_pod_status_phase{phase="Pending",cluster=~"$cluster"})
+
+      pod_phase_timeseries:
+        kind: Panel
+        spec:
+          display:
+            name: Pod Phase Over Time (All Clusters)
+          plugin:
+            kind: TimeSeriesChart
+            spec:
+              legend:
+                mode: list
+                position: bottom
+              visual:
+                display: line
+                lineWidth: 1.5
+              yAxis:
+                format:
+                  unit: decimal
+          queries:
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  datasource:
+                    kind: PersesDatasource
+                    name: acm-thanos-querier-datasource
+                  query: >-
+                    sum by (phase) (kube_pod_status_phase{cluster=~"$cluster"})
+                  seriesNameFormat: '{{phase}}'

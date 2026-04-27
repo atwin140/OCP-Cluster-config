@@ -3,6 +3,10 @@ kind: Kustomization
 
 resources:
 - multicluster-observability.yaml
+- mco-addon.yaml
+- perses-dashboards/acm-multicluster-fleet-overview.yaml
+- perses-dashboards/acm-multicluster-workload-health.yaml
+- perses-dashboards/acm-multicluster-control-plane-etcd.yaml
 
 commonLabels:
   app.kubernetes.io/part-of: multicluster-observability

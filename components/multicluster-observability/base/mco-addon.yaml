@@ -1,0 +1,108 @@
+apiVersion: observability.open-cluster-management.io/v1beta2
+kind: MultiClusterObservability
+metadata:
+  name: observability
+spec:
+  capabilities:
+    platform:
+      logs:
+        collection:
+          enabled: true
+    userWorkloads:
+      logs:
+        collection:
+          clusterLogForwarder:
+            enabled: true
+      traces:
+        collection:
+          instrumentation:
+            enabled: true
+          openTelemetryCollector:
+            enabled: false
+  observabilityAddonSpec:
+    enableMetrics: true
+    interval: 300
+    workers: 1
+    scrapeSizeLimitBytes: 1073741824
+  storageConfig:
+    storageClass: nas-iscsi-ext4-vol2
+    metricObjectStorage:
+      key: thanos.yaml
+      name: thanos-object-storage
+---
+apiVersion: observability.openshift.io/v1alpha1
+kind: UIPlugin
+metadata:
+  name: monitoring
+spec:
+  type: Monitoring
+  monitoring:
+    perses:
+      enabled: true
+    acm:
+      enabled: true
+      alertmanager:
+        url: 'https://alertmanager.open-cluster-management-observability.svc:9095'
+      thanosQuerier:
+        url: 'https://rbac-query-proxy.open-cluster-management-observability.svc:8443'
+---
+# Long-lived token for perses-sa to authenticate against the ACM rbac-query-proxy.
+# perses-sa already has get/list namespaces via perses-cr ClusterRole, which satisfies
+# the rbac-query-proxy SAR check.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: perses-sa-token
+  namespace: openshift-cluster-observability-operator
+  annotations:
+    kubernetes.io/service-account.name: perses-sa
+type: kubernetes.io/service-account-token
+---
+# PersesDatasource pointing at the ACM multi-cluster Thanos (rbac-query-proxy).
+# Uses the perses-sa bearer token to satisfy the OAuth proxy SAR check.
+# This makes all managed-cluster metrics visible in the Perses dashboard UI.
+apiVersion: perses.dev/v1alpha2
+kind: PersesDatasource
+metadata:
+  name: acm-thanos-querier-datasource
+  namespace: openshift-cluster-observability-operator
+spec:
+  client:
+    tls:
+      caCert:
+        certPath: /ca/service-ca.crt
+        type: file
+      enable: true
+  config:
+    default: false
+    display:
+      name: ACM Multi-Cluster Thanos
+    plugin:
+      kind: PrometheusDatasource
+      spec:
+        proxy:
+          kind: HTTPProxy
+          spec:
+            secret: perses-sa-token
+            url: https://rbac-query-proxy.open-cluster-management-observability.svc.cluster.local:8443
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: thanos-ruler-custom-rules
+  namespace: open-cluster-management-observability
+data:
+  custom_rules.yaml: |
+    groups:
+      - name: cluster-health
+        rules:
+        - alert: ClusterMemoryOverestimation
+          annotations:
+            summary: Notify when Memory Overestimation is high
+            description: "The cluster has a a greater than 10% overestimation of memory usage: {{ $value }} overestimation for {{ $labels.cluster }} {{ $labels.clusterID }}."
+          expr: |
+            topk(50, cluster:memory_requested:ratio - ignoring(usage) cluster:memory_utilized:ratio) * on(clusterID, cluster) group_left(memory_requested) count_values without() ("memory_requested", cluster:memory_requested:ratio) * on(clusterID, cluster) group_left(memory_utilized) count_values without() ("memory_utilized", cluster:memory_utilized:ratio) > 0.1
+          for: 5s
+          labels:
+            cluster: "{{ $labels.cluster }}"
+            severity: warning

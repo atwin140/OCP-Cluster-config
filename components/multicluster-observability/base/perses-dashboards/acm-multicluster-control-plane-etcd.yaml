@@ -1,0 +1,550 @@
+apiVersion: perses.dev/v1alpha2
+kind: PersesDashboard
+metadata:
+  name: acm-multicluster-control-plane-etcd
+  namespace: openshift-cluster-observability-operator
+  labels:
+    app.kubernetes.io/part-of: multicluster-observability
+    app.kubernetes.io/managed-by: argocd
+spec:
+  config:
+    display:
+      name: "ACM Multi-Cluster Control Plane & etcd Health"
+    duration: 1h
+    # -- Variables ----------------------------------------------------------------
+    variables:
+    - kind: ListVariable
+      spec:
+        name: cluster
+        display:
+          name: Cluster
+          hidden: false
+        allowAllValue: false
+        allowMultiple: false
+        sort: alphabetical-asc
+        plugin:
+          kind: PrometheusLabelValuesVariable
+          spec:
+            datasource:
+              kind: PersesDatasource
+              name: acm-thanos-querier-datasource
+            labelName: cluster
+            matchers:
+            - up{job="kubelet", metrics_path="/metrics/cadvisor"}
+    # -- Layouts ------------------------------------------------------------------
+    layouts:
+    - kind: Grid
+      spec:
+        display:
+          title: API Server Health
+        items:
+        - content:
+            $ref: '#/spec/panels/apiserver_error_rate_stat'
+          height: 4
+          width: 6
+          x: 0
+          "y": 0
+        - content:
+            $ref: '#/spec/panels/apiserver_request_rate_stat'
+          height: 4
+          width: 6
+          x: 6
+          "y": 0
+        - content:
+            $ref: '#/spec/panels/apiserver_latency_p99_stat'
+          height: 4
+          width: 6
+          x: 12
+          "y": 0
+        - content:
+            $ref: '#/spec/panels/apiserver_up_stat'
+          height: 4
+          width: 6
+          x: 18
+          "y": 0
+        - content:
+            $ref: '#/spec/panels/apiserver_request_rate_ts'
+          height: 8
+          width: 12
+          x: 0
+          "y": 4
+        - content:
+            $ref: '#/spec/panels/apiserver_latency_p99_ts'
+          height: 8
+          width: 12
+          x: 12
+          "y": 4
+        - content:
+            $ref: '#/spec/panels/apiserver_errors_ts'
+          height: 8
+          width: 24
+          x: 0
+          "y": 12
+    - kind: Grid
+      spec:
+        display:
+          title: etcd Health
+        items:
+        - content:
+            $ref: '#/spec/panels/etcd_leader_changes_stat'
+          height: 4
+          width: 6
+          x: 0
+          "y": 0
+        - content:
+            $ref: '#/spec/panels/etcd_db_size_stat'
+          height: 4
+          width: 6
+          x: 6
+          "y": 0
+        - content:
+            $ref: '#/spec/panels/etcd_proposals_failed_stat'
+          height: 4
+          width: 6
+          x: 12
+          "y": 0
+        - content:
+            $ref: '#/spec/panels/etcd_grpc_errors_stat'
+          height: 4
+          width: 6
+          x: 18
+          "y": 0
+        - content:
+            $ref: '#/spec/panels/etcd_db_size_ts'
+          height: 8
+          width: 12
+          x: 0
+          "y": 4
+        - content:
+            $ref: '#/spec/panels/etcd_fsync_duration_ts'
+          height: 8
+          width: 12
+          x: 12
+          "y": 4
+        - content:
+            $ref: '#/spec/panels/etcd_grpc_rate_ts'
+          height: 8
+          width: 24
+          x: 0
+          "y": 12
+    # -- Panels -------------------------------------------------------------------
+    panels:
+      # ---- API Server Stats -------------------------------------------------------
+      apiserver_error_rate_stat:
+        kind: Panel
+        spec:
+          display:
+            name: API Server Error Rate (5xx)
+          plugin:
+            kind: StatChart
+            spec:
+              calculation: last-number
+              format:
+                unit: requests/sec
+              thresholds:
+                steps:
+                - color: green
+                  value: 0
+                - color: red
+                  value: 0.5
+          queries:
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  datasource:
+                    kind: PersesDatasource
+                    name: acm-thanos-querier-datasource
+                  query: >-
+                    sum(rate(apiserver_request_total{cluster="$cluster",code=~"5.."}[5m]))
+
+      apiserver_request_rate_stat:
+        kind: Panel
+        spec:
+          display:
+            name: Total Request Rate
+          plugin:
+            kind: StatChart
+            spec:
+              calculation: last-number
+              format:
+                unit: requests/sec
+          queries:
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  datasource:
+                    kind: PersesDatasource
+                    name: acm-thanos-querier-datasource
+                  query: >-
+                    sum(rate(apiserver_request_total{cluster="$cluster"}[5m]))
+
+      apiserver_latency_p99_stat:
+        kind: Panel
+        spec:
+          display:
+            name: Request Latency p99
+          plugin:
+            kind: StatChart
+            spec:
+              calculation: last-number
+              format:
+                unit: seconds
+              thresholds:
+                steps:
+                - color: green
+                  value: 0
+                - color: orange
+                  value: 1
+                - color: red
+                  value: 2
+          queries:
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  datasource:
+                    kind: PersesDatasource
+                    name: acm-thanos-querier-datasource
+                  query: >-
+                    histogram_quantile(0.99, sum(rate(apiserver_request_duration_seconds_bucket{cluster="$cluster",verb!~"WATCH|CONNECT"}[5m])) by (le))
+
+      apiserver_up_stat:
+        kind: Panel
+        spec:
+          display:
+            name: API Server Instances Up
+          plugin:
+            kind: StatChart
+            spec:
+              calculation: last-number
+              format:
+                unit: decimal
+              thresholds:
+                steps:
+                - color: green
+                  value: 1
+                - color: red
+                  value: 0
+          queries:
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  datasource:
+                    kind: PersesDatasource
+                    name: acm-thanos-querier-datasource
+                  query: >-
+                    count(up{job="apiserver",cluster="$cluster"} == 1) or vector(0)
+
+      # ---- API Server Time Series -------------------------------------------------
+      apiserver_request_rate_ts:
+        kind: Panel
+        spec:
+          display:
+            name: Request Rate by Verb
+          plugin:
+            kind: TimeSeriesChart
+            spec:
+              legend:
+                mode: list
+                position: bottom
+              visual:
+                display: line
+                lineWidth: 1.5
+              yAxis:
+                format:
+                  unit: requests/sec
+          queries:
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  datasource:
+                    kind: PersesDatasource
+                    name: acm-thanos-querier-datasource
+                  query: >-
+                    sum by (verb) (rate(apiserver_request_total{cluster="$cluster"}[5m]))
+                  seriesNameFormat: '{{verb}}'
+
+      apiserver_latency_p99_ts:
+        kind: Panel
+        spec:
+          display:
+            name: Request Latency p99 by Resource
+          plugin:
+            kind: TimeSeriesChart
+            spec:
+              legend:
+                mode: list
+                position: bottom
+              visual:
+                display: line
+                lineWidth: 1.5
+              yAxis:
+                format:
+                  unit: seconds
+          queries:
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  datasource:
+                    kind: PersesDatasource
+                    name: acm-thanos-querier-datasource
+                  query: >-
+                    histogram_quantile(0.99,
+                      sum by (resource, le) (rate(apiserver_request_duration_seconds_bucket{cluster="$cluster",verb!~"WATCH|CONNECT"}[5m]))
+                    )
+                  seriesNameFormat: '{{resource}}'
+
+      apiserver_errors_ts:
+        kind: Panel
+        spec:
+          display:
+            name: API Server Errors by Code
+          plugin:
+            kind: TimeSeriesChart
+            spec:
+              legend:
+                mode: list
+                position: bottom
+              visual:
+                display: line
+                lineWidth: 1.5
+              yAxis:
+                format:
+                  unit: requests/sec
+          queries:
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  datasource:
+                    kind: PersesDatasource
+                    name: acm-thanos-querier-datasource
+                  query: >-
+                    sum by (code) (rate(apiserver_request_total{cluster="$cluster",code=~"[45].."}[5m]))
+                  seriesNameFormat: 'HTTP {{code}}'
+
+      # ---- etcd Stats -------------------------------------------------------------
+      etcd_leader_changes_stat:
+        kind: Panel
+        spec:
+          display:
+            name: Leader Changes (1h)
+          plugin:
+            kind: StatChart
+            spec:
+              calculation: last-number
+              format:
+                unit: decimal
+              thresholds:
+                steps:
+                - color: green
+                  value: 0
+                - color: orange
+                  value: 3
+                - color: red
+                  value: 5
+          queries:
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  datasource:
+                    kind: PersesDatasource
+                    name: acm-thanos-querier-datasource
+                  query: >-
+                    increase(etcd_server_leader_changes_seen_total{cluster="$cluster"}[1h])
+
+      etcd_db_size_stat:
+        kind: Panel
+        spec:
+          display:
+            name: etcd DB Size
+          plugin:
+            kind: StatChart
+            spec:
+              calculation: last-number
+              format:
+                unit: bytes
+              thresholds:
+                steps:
+                - color: green
+                  value: 0
+                - color: orange
+                  value: 5368709120
+                - color: red
+                  value: 7516192768
+          queries:
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  datasource:
+                    kind: PersesDatasource
+                    name: acm-thanos-querier-datasource
+                  query: >-
+                    max(etcd_mvcc_db_total_size_in_bytes{cluster="$cluster"})
+
+      etcd_proposals_failed_stat:
+        kind: Panel
+        spec:
+          display:
+            name: Raft Proposals Failed (5m)
+          plugin:
+            kind: StatChart
+            spec:
+              calculation: last-number
+              format:
+                unit: decimal
+              thresholds:
+                steps:
+                - color: green
+                  value: 0
+                - color: red
+                  value: 1
+          queries:
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  datasource:
+                    kind: PersesDatasource
+                    name: acm-thanos-querier-datasource
+                  query: >-
+                    increase(etcd_server_proposals_failed_total{cluster="$cluster"}[5m])
+
+      etcd_grpc_errors_stat:
+        kind: Panel
+        spec:
+          display:
+            name: gRPC Errors (5m)
+          plugin:
+            kind: StatChart
+            spec:
+              calculation: last-number
+              format:
+                unit: decimal
+              thresholds:
+                steps:
+                - color: green
+                  value: 0
+                - color: red
+                  value: 1
+          queries:
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  datasource:
+                    kind: PersesDatasource
+                    name: acm-thanos-querier-datasource
+                  query: >-
+                    sum(increase(grpc_server_handled_total{cluster="$cluster",grpc_code!="OK"}[5m])) or vector(0)
+
+      # ---- etcd Time Series -------------------------------------------------------
+      etcd_db_size_ts:
+        kind: Panel
+        spec:
+          display:
+            name: etcd DB Size Over Time
+          plugin:
+            kind: TimeSeriesChart
+            spec:
+              legend:
+                mode: list
+                position: bottom
+              visual:
+                display: line
+                lineWidth: 1.5
+              yAxis:
+                format:
+                  unit: bytes
+          queries:
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  datasource:
+                    kind: PersesDatasource
+                    name: acm-thanos-querier-datasource
+                  query: >-
+                    etcd_mvcc_db_total_size_in_bytes{cluster="$cluster"}
+                  seriesNameFormat: '{{pod}}'
+
+      etcd_fsync_duration_ts:
+        kind: Panel
+        spec:
+          display:
+            name: etcd WAL fsync Duration p99
+          plugin:
+            kind: TimeSeriesChart
+            spec:
+              legend:
+                mode: list
+                position: bottom
+              visual:
+                display: line
+                lineWidth: 1.5
+              yAxis:
+                format:
+                  unit: seconds
+          queries:
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  datasource:
+                    kind: PersesDatasource
+                    name: acm-thanos-querier-datasource
+                  query: >-
+                    histogram_quantile(0.99,
+                      sum by (pod, le) (rate(etcd_disk_wal_fsync_duration_seconds_bucket{cluster="$cluster"}[5m]))
+                    )
+                  seriesNameFormat: '{{pod}}'
+
+      etcd_grpc_rate_ts:
+        kind: Panel
+        spec:
+          display:
+            name: etcd gRPC Request Rate by Method
+          plugin:
+            kind: TimeSeriesChart
+            spec:
+              legend:
+                mode: list
+                position: bottom
+              visual:
+                display: line
+                lineWidth: 1.5
+              yAxis:
+                format:
+                  unit: requests/sec
+          queries:
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  datasource:
+                    kind: PersesDatasource
+                    name: acm-thanos-querier-datasource
+                  query: >-
+                    sum by (grpc_method) (rate(grpc_server_handled_total{cluster="$cluster"}[5m]))
+                  seriesNameFormat: '{{grpc_method}}'
