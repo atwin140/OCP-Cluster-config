@@ -5,7 +5,8 @@ resources:
 - keycloak-operator.yaml
 # - cert-manager.yaml
 - acm-argocd-integration.yaml
-- minio.yaml
-- multicluster-observability.yaml
+# - minio.yaml
+# - multicluster-observability.yaml
 - acs.yaml
-- gitea.yaml
+
+# - gitea.yaml

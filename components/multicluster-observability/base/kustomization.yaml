@@ -4,11 +4,24 @@ kind: Kustomization
 resources:
 - multicluster-observability.yaml
 - mco-addon.yaml
-- datasource.yml
+- rbac.yaml
+- datasource.yaml
 - perses-dashboards/acm-multicluster-fleet-overview.yaml
 - perses-dashboards/acm-multicluster-workload-health.yaml
 - perses-dashboards/acm-multicluster-control-plane-etcd.yaml
+- thanos-object-storage-secret-sealed.yaml
+# - perses-secret-job.yaml
+- perses-provisioning-secret.yaml
 
 commonLabels:
   app.kubernetes.io/part-of: multicluster-observability
   app.kubernetes.io/managed-by: argocd
+
+patches:
+- path: perses-cr-patch.yaml
+  target:
+    group: perses.dev
+    version: v1alpha2
+    kind: Perses
+    name: perses
+    namespace: openshift-cluster-observability-operator

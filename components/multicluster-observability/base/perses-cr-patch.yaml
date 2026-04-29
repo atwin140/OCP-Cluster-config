@@ -1,0 +1,12 @@
+apiVersion: perses.dev/v1alpha2
+kind: Perses
+metadata:
+  name: perses
+  namespace: openshift-cluster-observability-operator
+  annotations:
+    argocd.argoproj.io/sync-wave: "20"
+spec:
+  provisioning:
+    secretRefs:
+    - name: perses-sa-bearer
+      key: token

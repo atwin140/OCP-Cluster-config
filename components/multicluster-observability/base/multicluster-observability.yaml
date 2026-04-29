@@ -3,7 +3,7 @@ kind: MultiClusterObservability
 metadata:
   name: observability
   annotations:
-    argocd.argoproj.io/sync-wave: "2"
+    argocd.argoproj.io/sync-wave: "10"
 spec:
   observabilityAddonSpec:
     enableMetrics: true
@@ -11,7 +11,6 @@ spec:
     workers: 1
     scrapeSizeLimitBytes: 1073741824
   storageConfig:
-    storageClass: nas-iscsi-ext4-vol2
     metricObjectStorage:
-      key: thanos.yaml
       name: thanos-object-storage
+      key: thanos.yaml

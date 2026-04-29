@@ -1,0 +1,85 @@
+# RBAC for perses-sa to read the SA token secret and query rbac-query-proxy
+---
+# Allow perses-sa to read its own bearer token secret
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: perses-sa-read-token
+  namespace: openshift-cluster-observability-operator
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+rules:
+- apiGroups: [""]
+  resources: [secrets]
+  resourceNames: [perses-sa-token]
+  verbs: [get]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: perses-sa-read-token
+  namespace: openshift-cluster-observability-operator
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: perses-sa-read-token
+subjects:
+- kind: ServiceAccount
+  name: perses-sa
+  namespace: openshift-cluster-observability-operator
+---
+# Allow perses-sa to list namespaces (rbac-query-proxy SAR check)
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: perses-sa-ns-reader
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+rules:
+- apiGroups: [""]
+  resources: [namespaces]
+  verbs: [get, list]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: perses-sa-ns-reader
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: perses-sa-ns-reader
+subjects:
+- kind: ServiceAccount
+  name: perses-sa
+  namespace: openshift-cluster-observability-operator
+---
+# Allow perses-sa to list managed clusters (rbac-query-proxy SAR check)
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: perses-sa-managedcluster-view
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+rules:
+- apiGroups: [cluster.open-cluster-management.io]
+  resources: [managedclusters]
+  verbs: [get, list, watch]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: perses-sa-managedcluster-view
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: perses-sa-managedcluster-view
+subjects:
+- kind: ServiceAccount
+  name: perses-sa
+  namespace: openshift-cluster-observability-operator
