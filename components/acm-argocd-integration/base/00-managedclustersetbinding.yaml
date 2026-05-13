@@ -1,9 +1,12 @@
-# Binds the 'default' ManagedClusterSet to the openshift-gitops namespace so that
-# Placements and GitOpsClusters in that namespace can reference clusters in this set.
+# Binds the 'global' ManagedClusterSet to the openshift-gitops namespace.
+# The global set contains ALL managed clusters including the local hub.
+# The global ManagedClusterSet is ACM's built-in set that contains every managed cluster 
+# including the hub. With an empty spec: {}, the Placement will match all of them and the 
+# GitOpsCluster will register them all with ArgoCD.
 apiVersion: cluster.open-cluster-management.io/v1beta2
 kind: ManagedClusterSetBinding
 metadata:
-  name: default
+  name: global
   namespace: openshift-gitops
 spec:
-  clusterSet: default
+  clusterSet: global
