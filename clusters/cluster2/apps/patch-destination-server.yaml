@@ -1,3 +1,0 @@
-- op: replace
-  path: /spec/destination/server
-  value: https://cluster-proxy-addon-user.multicluster-engine.svc.cluster.local:9092/cluster2
